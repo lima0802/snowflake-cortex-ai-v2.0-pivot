@@ -1,0 +1,49 @@
+# DIA v2 - Python Dependencies (v2.0-β)
+# Install: pip install -r requirements.txt
+#
+# v2.0-β model strategy: OpenAI GPT-4o (SQL + Synthesis), GPT-4o-mini (Intent),
+# text-embedding-3-small (RAG). Single API key via LiteLLM.
+
+# --- Core Framework ---
+fastapi==0.115.0
+uvicorn[standard]==0.31.0
+pydantic==2.9.0
+python-dotenv==1.0.1
+
+# --- LLM Integration ---
+litellm==1.51.0          # Unified LLM interface — supports OpenAI, Google, Together, Groq
+langchain==0.3.7
+langchain-core==0.3.15   # Pinned to avoid pip backtracking
+langgraph==0.2.45
+langchain-openai==0.2.8
+openai>=1.54.0           # OpenAI SDK (GPT-4o, GPT-4o-mini, text-embedding-3-small)
+
+# --- Snowflake ---
+snowflake-connector-python==3.12.3
+
+# --- RAG / Vector Search ---
+faiss-cpu==1.9.0
+# sentence-transformers only needed if EMBEDDING_PROVIDER=local (BGE-M3 fallback)
+# sentence-transformers==3.3.0
+
+# --- ML / Analytics (Python-only, no LLM dependency) ---
+prophet==1.1.6           # Time-series forecasting
+scipy==1.14.0            # Statistical anomaly detection (Z-score / IQR)
+pandas==2.2.3
+numpy==1.26.4
+
+# --- Visualization ---
+plotly==5.24.0
+
+# --- UI ---
+streamlit==1.40.0
+
+# --- Teams Bot (optional) ---
+botbuilder-core==4.16.2
+botbuilder-integration-aiohttp==4.16.2
+aiohttp==3.10.5          # 3.10.5 required by botbuilder; accepted by litellm & langchain
+
+# --- Utilities ---
+pyyaml==6.0.2
+httpx==0.27.0
+tenacity==9.0.0          # Retry logic

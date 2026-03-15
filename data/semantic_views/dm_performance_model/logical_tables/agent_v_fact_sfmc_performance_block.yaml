@@ -1,0 +1,123 @@
+---
+# =============================================================================
+# MODULE: logical_tables — EMAIL_PERFORMANCE (primary fact table)
+# Purpose: Define the dimensions exposed from the SFMC performance fact table.
+# Owned by: Data Engineering
+#
+# Structure follows the Snowflake Semantic View YAML spec:
+#   https://docs.snowflake.com/en/user-guide/views-semantic/semantic-view-yaml-spec
+#
+# Each entry in 'tables' corresponds to one logical table (= one base_table).
+# The 'name' must match the alias defined in view_metadata.yaml.
+# The 'base_table' fully qualifies the physical table using the same
+# {{DATABASE}} / {{SCHEMA}} placeholders resolved at deploy time.
+# =============================================================================
+
+tables: 
+  - name: AGENT_V_FACT_SFMC_PERFORMANCE_BLOCK
+    description: >
+      Fact table contains records of email marketing block performance metrics. Each record represents a specific email block's performance within individual email campaigns, including click engagement data and timing information.
+    base_table:
+      database: "{{DATABASE}}"
+      schema: "{{SCHEMA}}"
+      table: AGENT_V_FACT_SFMC_PERFORMANCE_BLOCK
+
+    dimensions:
+      - name: ALIAS
+        synonyms:
+          - OBJECT_ALIAS
+          - REFERENCE_NAME
+        description: >
+          An alternate name or identifier.
+        expr: ALIAS
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "EX60_Launch_configurator_BlockType::1COLB_BlockPosition::8_LinkType::Img1_LinkText::ZijaanzichtvandebuitenkantvaneenVolvoEX60metverschillendekoetswerkkleuren_LanguageCode::NL&OTD_GUID=0746663f-6019-461c-9bd6-f708dab6cb94"
+          - "MHEV_PHEV_Accessories_BlockType::3GRIDB_BlockPosition::2_LinkType::CTA1_LinkText::Discoveraccessories_LanguageCode::CAEN&OTD_GUID=42642ce0-528f-415d-ac23-d785a06f712d"
+          - "Accessories_BlockType::MAINB_BlockPosition::2_LinkType::Img1_LinkText::Enkollasjavforskjelligbiltilbehørsombrukesutendørs._LanguageCode::NO&OTD_GUID=b157aaa9-2a96-4696-ae9c-2cf4c5ad67cd"
+
+      - name: COMP_KEY
+        synonyms:
+          - BUSINESS_SEND_KEY
+          - COMPOSITE_KEY
+          - JOIN_KEY
+          - RECORD_KEY
+          - UNIQUE_KEY
+        description: >
+          Composite key - unique identifier created by combining SEND_ID and BUSINESS_UNIT.
+        expr: COMP_KEY
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "2224536VCBE"
+          - "2224445VCSE"
+          - "2207411VCUS"
+
+      - name: BUSINESS_UNIT
+        synonyms:
+          - BU
+          - BU_CODE
+          - MARKET
+          - VCC_COUNTRY_CODE
+        description: >
+          Business unit code derived from the last 4 characters of COMP_KEY (e.g. VCUK, VCDE, VCFR).
+          Used as the join key to AGENT_V_DIM_COUNTRY via VC_COUNTRY_CODE.
+        expr: RIGHT(COMP_KEY, 4)
+        data_type: VARCHAR(4)
+        sample_values:
+          - "VCBE"
+          - "VCSE"
+          - "VCUS"
+
+      - name: EMAIL_NAME
+        synonyms:
+          - CAMPAIGN_NAME
+          - EMAIL_NAME
+          - EMAIL_TITLE
+          - JOB_NAME
+          - SEND_NAME
+        description: >
+          The name or title assigned to a particular email as a reference for identification.
+          Contains campaign details like program, date, model, and version.
+        expr: EMAIL_NAME
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "VCUS-EM1-Urgently-Post-Accident_Marketing_Awareness_202507"
+          - "VCZA_CAL_CCAMP_20260122_10070-life-updated_EX60-Launch_EDM7_V1_EN"
+          - "VCUS_CPROG_first-year-program-MHEV_Safety_EDM4_V4_USEN"
+    
+    # ── Date ────────────────────────────────────────────────────────────────
+    time_dimensions:
+      - name: MIN_EVENTDATE
+        synonyms:
+          - EARLIEST_EVENT_DATE
+          - FIRST_EVENT_DATE
+          - INITIAL_EVENT_DATE
+          - MINIMUM_DATE
+          - START_DATE
+        description: >
+          The earliest event date within the performance block.
+        expr: MIN_EVENTDATE
+        data_type: DATE
+        sample_values:
+          - "2025-12-02"
+          - "2025-12-01"
+          - "2026-01-24"
+    
+    # ── Facts ────────────────────────────────────────────────────────────────
+    facts:
+      - name: UNIQUE_BLOCK_CLICKS
+        synonyms:
+          - BLOCK_CLICK_COUNT
+          - DEDUPLICATED_CLICKS
+          - DISTINCT_BLOCK_CLICKS
+          - DISTINCT_CLICKS_PER_BLOCK
+          - UNIQUE_CLICK_COUNT
+        description: >
+          The count of unique clicks within a specific block.
+        expr: UNIQUE_BLOCK_CLICKS
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - "79"
+          - "610"
+          - "2069"

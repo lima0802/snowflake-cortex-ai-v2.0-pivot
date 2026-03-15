@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python -c \":*)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(start cmd:*)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":8501\")",
+      "Bash(.venvScriptsstreamlit run:*)",
+      "Bash(.venv/Scripts/streamlit.exe run:*)",
+      "Bash(.venv/Scripts/python -c \"import ast; ast.parse\\(open\\(''ui/streamlit_app.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(findstr \"LISTENING\")",
+      "Bash(taskkill /PID 121148 /F)",
+      "Bash(taskkill //PID 121148 //F)",
+      "Bash(.venv/Scripts/python -c \"import streamlit; print\\(streamlit.__version__\\)\")",
+      "Bash(taskkill //PID 79576 //F)",
+      "Bash(findstr :8501)",
+      "Bash(findstr :8000)",
+      "Bash(taskkill //PID 21656 //F)",
+      "Bash(taskkill //PID 103428 //F)",
+      "Bash(wmic process:*)",
+      "Bash(taskkill //PID 115000 //F)",
+      "Bash(taskkill //PID 146452 //F)",
+      "Bash(findstr LISTENING)",
+      "Bash(findstr :8001)"
+    ]
+  }
+}

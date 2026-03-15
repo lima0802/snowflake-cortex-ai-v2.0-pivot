@@ -1,0 +1,216 @@
+---
+# =============================================================================
+# MODULE: logical_tables — SFMC Performance Tracking (primary fact table)
+# Purpose: Define the measures and dimensions from the SFMC email send fact table.
+# Owned by: Data Engineering
+# =============================================================================
+
+tables:
+  - name: AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING
+    description: >
+      Primary fact table for SFMC email performance metrics. Each record represents
+      one email send job (identified by COMP_KEY) with aggregated engagement metrics
+      including sends, bounces, opens, clicks, and unsubscribes. Join to
+      AGENT_V_DIM_SFMC_METADATA_JOB on COMP_KEY for campaign metadata.
+    base_table:
+      database: "{{DATABASE}}"
+      schema: "{{SCHEMA}}"
+      table: AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING
+
+    dimensions:
+      - name: COMP_KEY
+        synonyms:
+          - COMPOSITE_KEY
+          - JOIN_KEY
+          - RECORD_KEY
+          - SEND_KEY
+          - UNIQUE_KEY
+        description: >
+          Composite key — unique identifier created by combining SEND_ID and BUSINESS_UNIT.
+          Primary join key to AGENT_V_DIM_SFMC_METADATA_JOB.
+        expr: COMP_KEY
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "2207635VCDE"
+          - "2215541VCMX"
+          - "2205462VCCH"
+
+      - name: BUSINESS_UNIT
+        synonyms:
+          - BU
+          - MARKET
+          - MARKET_CODE
+          - VC_CODE
+        description: >
+          The Volvo Cars business unit / market code (e.g. VCUK, VCDE, VCFR).
+          Pattern: 'VC' + ISO country code. Use for market-level filtering.
+        expr: BUSINESS_UNIT
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "VCUK"
+          - "VCDE"
+          - "VCSE"
+
+    time_dimensions:
+      - name: SEND_DATE
+        synonyms:
+          - CAMPAIGN_DATE
+          - DATE
+          - DATE_SENT
+          - EMAIL_DATE
+          - SENT_DATE
+        description: >
+          The date on which the email was sent. Use SEND_DATE for all time-based
+          filtering and trend analysis. Format: YYYY-MM-DD.
+        expr: SEND_DATE
+        data_type: DATE
+        sample_values:
+          - "2025-12-09"
+          - "2025-09-01"
+          - "2025-10-10"
+
+    # ── Metrics ────────────────────────────────────────────────────────────────
+    metrics:
+      - name: SENDS
+        synonyms:
+          - EMAILS_SENT
+          - SEND_COUNT
+          - TOTAL_SENDS
+          - VOLUME
+        description: >
+          Total number of emails sent (includes bounced). Raw dispatch count.
+          Use SUM(sends) as the base volume metric.
+        expr: sends
+        data_type: NUMBER(38,0)
+        default_aggregation: sum
+
+      - name: BOUNCES
+        synonyms:
+          - BOUNCE_COUNT
+          - BOUNCED
+          - TOTAL_BOUNCES
+        description: >
+          Total number of bounced emails (hard + soft). Used to calculate
+          delivered = SUM(sends) - SUM(bounces) and bounce rate.
+        expr: bounces
+        data_type: NUMBER(38,0)
+        default_aggregation: sum
+
+      - name: UNIQUE_OPENS
+        synonyms:
+          - OPENS
+          - OPEN_COUNT
+          - UNIQUE_OPEN_COUNT
+        description: >
+          Count of unique email opens (one per subscriber per send).
+          NOTE: May be inflated due to Apple Mail Privacy Protection (MPP).
+          Click rate is the primary reliable engagement metric.
+        expr: unique_opens
+        data_type: NUMBER(38,0)
+        default_aggregation: sum
+
+      - name: UNIQUE_CLICKS
+        synonyms:
+          - CLICKS
+          - CLICK_COUNT
+          - UNIQUE_CLICK_COUNT
+        description: >
+          Count of unique email clicks (one per subscriber per send).
+          Primary reliable engagement metric — not affected by Apple MPP.
+        expr: unique_clicks
+        data_type: NUMBER(38,0)
+        default_aggregation: sum
+
+      - name: UNSUBSCRIBES
+        synonyms:
+          - OPT_OUTS
+          - UNSUBSCRIBE_COUNT
+          - UNSUBS
+        description: >
+          Count of unsubscribe events. Used to calculate unsubscribe rate.
+        expr: unsubscribes
+        data_type: NUMBER(38,0)
+        default_aggregation: sum
+
+      - name: DELIVERED
+        synonyms:
+          - DELIVERED_COUNT
+          - EMAILS_DELIVERED
+          - NET_SENDS
+          - TOTAL_DELIVERED
+        description: >
+          Derived: emails successfully delivered = SUM(sends) - SUM(bounces).
+          Use HAVING SUM(sends) - SUM(bounces) >= 100 to filter low-volume records.
+        expr: sends - bounces
+        data_type: NUMBER(38,0)
+        default_aggregation: sum
+
+      - name: OPEN_RATE_PCT
+        synonyms:
+          - OPEN_RATE
+          - OR
+        description: >
+          Open rate as percentage: ROUND(SUM(unique_opens) * 100.0 / NULLIF(SUM(sends) - SUM(bounces), 0), 1).
+          NOTE: May be inflated due to Apple Mail Privacy Protection.
+        expr: ROUND(unique_opens * 100.0 / NULLIF(sends - bounces, 0), 1)
+        data_type: FLOAT
+        default_aggregation: avg
+
+      - name: CLICK_RATE_PCT
+        synonyms:
+          - CLICK_RATE
+          - CTR
+          - CLICK_THROUGH_RATE
+        description: >
+          Click rate as percentage: ROUND(SUM(unique_clicks) * 100.0 / NULLIF(SUM(sends) - SUM(bounces), 0), 1).
+          Primary reliable engagement metric.
+        expr: ROUND(unique_clicks * 100.0 / NULLIF(sends - bounces, 0), 1)
+        data_type: FLOAT
+        default_aggregation: avg
+
+      - name: CTOR_PCT
+        synonyms:
+          - CTOR
+          - CLICK_TO_OPEN_RATE
+          - CLICK_TO_OPEN
+        description: >
+          Click-to-open rate as percentage: ROUND(SUM(unique_clicks) * 100.0 / NULLIF(SUM(unique_opens), 0), 1).
+        expr: ROUND(unique_clicks * 100.0 / NULLIF(unique_opens, 0), 1)
+        data_type: FLOAT
+        default_aggregation: avg
+
+      - name: BOUNCE_RATE_PCT
+        synonyms:
+          - BOUNCE_RATE
+          - BR
+        description: >
+          Bounce rate as percentage: ROUND(SUM(bounces) * 100.0 / NULLIF(SUM(sends), 0), 1).
+        expr: ROUND(bounces * 100.0 / NULLIF(sends, 0), 1)
+        data_type: FLOAT
+        default_aggregation: avg
+
+      - name: UNSUBSCRIBE_RATE_PCT
+        synonyms:
+          - UNSUB_RATE
+          - UNSUBSCRIBE_RATE
+          - OPT_OUT_RATE
+        description: >
+          Unsubscribe rate as percentage: ROUND(SUM(unsubscribes) * 100.0 / NULLIF(SUM(sends), 0), 2).
+        expr: ROUND(unsubscribes * 100.0 / NULLIF(sends, 0), 2)
+        data_type: FLOAT
+        default_aggregation: avg
+
+      - name: DELIVERY_RATE_PCT
+        synonyms:
+          - DELIVERY_RATE
+          - DELIVERABILITY
+        description: >
+          Delivery rate as percentage: ROUND((SUM(sends) - SUM(bounces)) * 100.0 / NULLIF(SUM(sends), 0), 1).
+        expr: ROUND((sends - bounces) * 100.0 / NULLIF(sends, 0), 1)
+        data_type: FLOAT
+        default_aggregation: avg
+
+    # ── Primary key ────────────────────────────────────────────────────────────
+    primary_key:
+      columns:
+        - COMP_KEY

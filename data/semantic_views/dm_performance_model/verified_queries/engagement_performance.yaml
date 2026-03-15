@@ -1,0 +1,155 @@
+---
+# =============================================================================
+# MODULE: verified_queries — Few-shot SQL examples for the Text-to-SQL engine
+# Purpose: Provide verified, high-quality SQL examples to guide LLM generation.
+#          These are injected into the SQL generation prompt as few-shot examples.
+# =============================================================================
+
+verified_queries:
+
+  - question: "What is the overall click rate last month?"
+    category: engagement_analysis
+    sql: |
+      SELECT
+        ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,
+        SUM(f.sends) - SUM(f.bounces) AS total_delivered,
+        SUM(f.unique_clicks) AS total_clicks
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+      WHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)
+        AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -1, CURRENT_DATE))
+        AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)
+      HAVING SUM(f.sends) - SUM(f.bounces) >= 100
+
+  - question: "Show me click rate by market for the last 6 months, top 10"
+    category: market_comparison
+    sql: |
+      SELECT
+        m.business_unit,
+        ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,
+        SUM(f.sends) - SUM(f.bounces) AS total_delivered
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+      WHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)
+        AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -6, CURRENT_DATE))
+        AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)
+      GROUP BY m.business_unit
+      HAVING SUM(f.sends) - SUM(f.bounces) >= 100
+      ORDER BY click_rate_pct DESC
+      LIMIT 10
+
+  - question: "What is the click rate for campaigns in EMEA last month?"
+    category: segment_breakdown
+    sql: |
+      SELECT
+        ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,
+        SUM(f.sends) - SUM(f.bounces) AS total_delivered,
+        COUNT(DISTINCT m.email_name) AS campaign_count
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+      INNER JOIN AGENT_V_DIM_COUNTRY c ON m.business_unit = c.vc_country_code
+      WHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)
+        AND m.program_or_compaign = 'Campaign'
+        AND c.region_name_group = 'EMEA'
+        AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -1, CURRENT_DATE))
+        AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)
+      HAVING SUM(f.sends) - SUM(f.bounces) >= 100
+
+  - question: "Show open rate and click rate trend by month YTD"
+    category: time_comparison
+    sql: |
+      SELECT
+        DATE_TRUNC('MONTH', f.send_date) AS send_month,
+        ROUND(SUM(f.unique_opens) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS open_rate_pct,
+        ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,
+        SUM(f.sends) - SUM(f.bounces) AS total_delivered
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+      WHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)
+        AND f.send_date >= DATE_TRUNC('YEAR', CURRENT_DATE)
+        AND f.send_date <= CURRENT_DATE
+      GROUP BY DATE_TRUNC('MONTH', f.send_date)
+      HAVING SUM(f.sends) - SUM(f.bounces) >= 100
+      ORDER BY send_month DESC
+
+  - question: "Top 10 campaigns by click rate last month"
+    category: ranking_query
+    sql: |
+      SELECT
+        m.email_name_cleansed,
+        m.business_unit,
+        ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,
+        ROUND(SUM(f.unique_opens) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS open_rate_pct,
+        SUM(f.sends) - SUM(f.bounces) AS total_delivered
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+      WHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)
+        AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -1, CURRENT_DATE))
+        AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)
+      GROUP BY m.email_name_cleansed, m.business_unit
+      HAVING SUM(f.sends) - SUM(f.bounces) >= 100
+      ORDER BY click_rate_pct DESC
+      LIMIT 10
+
+  - question: "What is the Lead Nurture program performance YTD?"
+    category: program_performance
+    sql: |
+      SELECT
+        m.email_name_cleansed,
+        m.business_unit,
+        ROUND(SUM(f.unique_opens) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS open_rate_pct,
+        ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,
+        ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.unique_opens), 0), 1) AS ctor_pct,
+        SUM(f.sends) - SUM(f.bounces) AS total_delivered
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+      WHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)
+        AND (m.program_names ILIKE '%lead-nurture%' OR m.program_names ILIKE '%LNP%')
+        AND f.send_date >= DATE_TRUNC('YEAR', CURRENT_DATE)
+        AND f.send_date <= CURRENT_DATE
+      GROUP BY m.email_name_cleansed, m.business_unit
+      HAVING SUM(f.sends) - SUM(f.bounces) >= 100
+      ORDER BY click_rate_pct DESC
+      LIMIT 10
+
+  - question: "What is the bounce rate by market last month?"
+    category: bounce_unsubscribe
+    sql: |
+      SELECT
+        m.business_unit,
+        ROUND(SUM(f.bounces) * 100.0 / NULLIF(SUM(f.sends), 0), 1) AS bounce_rate_pct,
+        SUM(f.sends) AS total_sends,
+        SUM(f.bounces) AS total_bounces
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+      WHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)
+        AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -1, CURRENT_DATE))
+        AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)
+      GROUP BY m.business_unit
+      HAVING SUM(f.sends) >= 100
+      ORDER BY bounce_rate_pct DESC
+      LIMIT 10
+
+  - question: "Compare click rate YoY for VCUK programs"
+    category: time_comparison
+    sql: |
+      SELECT
+        YEAR(f.send_date) AS send_year,
+        ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,
+        SUM(f.sends) - SUM(f.bounces) AS total_delivered,
+        COUNT(DISTINCT m.email_name) AS email_count
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+      WHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)
+        AND m.business_unit = 'VCUK'
+        AND m.program_or_compaign = 'Program'
+        AND (
+          (f.send_date >= DATE_TRUNC('YEAR', CURRENT_DATE) AND f.send_date <= CURRENT_DATE)
+          OR
+          (f.send_date >= DATE_TRUNC('YEAR', DATEADD('YEAR', -1, CURRENT_DATE))
+           AND f.send_date < DATE_TRUNC('YEAR', CURRENT_DATE)
+           AND f.send_date <= DATEADD('YEAR', -1, CURRENT_DATE))
+        )
+      GROUP BY YEAR(f.send_date)
+      HAVING SUM(f.sends) - SUM(f.bounces) >= 100
+      ORDER BY send_year DESC

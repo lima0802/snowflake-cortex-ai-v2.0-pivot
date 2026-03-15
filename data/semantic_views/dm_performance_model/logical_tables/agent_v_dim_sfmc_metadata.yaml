@@ -1,0 +1,516 @@
+---
+# =============================================================================
+# MODULE: logical_tables — EMAIL_PERFORMANCE (primary fact table)
+# Purpose: Define the dimensions exposed from the SFMC performance fact table.
+# Owned by: Data Engineering
+#
+# Structure follows the Snowflake Semantic View YAML spec:
+#   https://docs.snowflake.com/en/user-guide/views-semantic/semantic-view-yaml-spec
+#
+# Each entry in 'tables' corresponds to one logical table (= one base_table).
+# The 'name' must match the alias defined in view_metadata.yaml.
+# The 'base_table' fully qualifies the physical table using the same
+# {{DATABASE}} / {{SCHEMA}} placeholders resolved at deploy time.
+# =============================================================================
+
+tables:
+  - name: AGENT_V_DIM_SFMC_METADATA_JOB
+    description: >
+      Dim table contains records of email marketing campaigns and their associated metadata. Each record represents a single email send and includes details about the campaign configuration, target audience segmentation by vehicle model and geographic region, and compliance tracking.
+    base_table:
+      database: "{{DATABASE}}"
+      schema: "{{SCHEMA}}"
+      table: AGENT_V_DIM_SFMC_METADATA_JOB
+
+    dimensions:
+      - name: AB_TESTING
+        synonyms:
+          - A/B_TEST
+          - AB_TEST
+          - EXPERIMENT
+          - MULTIVARIATE_TEST
+          - SPLIT_TEST
+          - TEST_VERSION
+        description: >
+          A method of marketing testing where two versions (A and B) are compared to determine which one performs better.
+        expr: AB_TESTING
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "B"
+          - "A"
+
+      - name: BUSINESS_UNIT
+        synonyms:
+          - BU
+          - COUNTRY_CODE
+          - MARKET
+          - MARKET_CODE
+          - MARKET_IDENTIFIER
+          - VC_CODE
+        description: >
+          A distinct section within an organization representing a market.
+        expr: BUSINESS_UNIT
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "VCCA"
+          - "VCIN"
+          - "VCPT"
+
+      - name: CAR_MODEL
+        synonyms:
+          - CAR
+          - CAR_MODEL
+          - CAR_TYPE
+          - MODEL
+          - MODEL_NAME
+          - VEHICLE
+          - VEHICLE_MODEL
+        description: >
+          The specific make and design of a car as classified as model.
+        expr: UPPER(TRIM(CAR_MODEL))
+        data_type: VARCHAR(15)
+        sample_values:
+          - "None"
+          - "XC90"
+          - "EX30"
+
+      - name: CATALYST_COUNTRY_CODE
+        synonyms:
+          - BRIEF_COUNTRY
+          - CATALYST_COUNTRY
+          - CATALYST_COUNTRY_ABBREVIATION
+          - CATALYST_COUNTRY_CODE
+          - CATALYST_COUNTRY_ID
+          - CATALYST_COUNTRY_IDENTIFIER
+          - CATALYST_ISO_COUNTRY_CODE
+          - CATALYST_MARKET
+          - CATALYST_NATION_CODE
+          - CATALYST_ORIGIN_COUNTRY_CODE
+          - CATALYST_TERRITORIAL_CODE
+        description: >
+          An identifier representing the country of origin or use related to a particular catalyst.
+        expr: CATALYST_COUNTRY_CODE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "VCCH"
+          - "VCJP"
+
+      - name: CATALYST_TYPE
+        synonyms:
+          - BRIEF_TYPE
+          - CATALYST_CATEGORY
+          - CATALYST_TYPE
+        description: >
+          The type of catalyst/campaign classification.
+        expr: CATALYST_TYPE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "CPROG"
+          - "CENEWS"
+
+      - name: COMMUNICATION_CATEGORY
+        synonyms:
+          - CATEGORY
+          - COMMUNICATION_CATEGORY
+          - CONTENT_CATEGORY
+          - EMAIL_CATEGORY
+          - MESSAGE_CATEGORY
+        description: >
+          Category of communication.
+        expr: COMMUNICATION_CATEGORY
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "NOT"
+          - "EVT"
+
+      - name: COMPLIANT
+        synonyms:
+          - COMPLIANCE
+          - COMPLIANCE_STATUS
+          - COMPLIANT
+          - COMPLIANT_STATUS
+        description: >
+          The state of adherence to rules, regulations, or specified standards within an email or marketing context.
+        expr: COMPLIANT
+        data_type: VARCHAR(13)
+        sample_values:
+          - "compliant"
+          - "non compliant"
+
+      - name: COMP_KEY
+        synonyms:
+          - BUSINESS_SEND_KEY
+          - COMPOSITE_KEY
+          - JOIN_KEY
+          - RECORD_KEY
+          - UNIQUE_KEY
+        description: >
+          Composite key - unique identifier created by combining SEND_ID and BUSINESS_UNIT.
+        expr: COMP_KEY
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "2207635VCDE"
+          - "2215541VCMX"
+          - "2205462VCCH"
+
+      - name: DASHBOARD_CAR_MODEL
+        synonyms:
+          - DASHBOARD_MODEL
+          - DISPLAY_MODEL
+          - REPORTING_MODEL
+        description: >
+          Car model categorization for dashboard reporting.
+        expr: UPPER(TRIM (DASHBOARD_CAR_MODEL))
+        data_type: VARCHAR(54)
+        sample_values:
+          - "ES90"
+          - "EX60"
+          - "XC60"
+
+      - name: EMAIL_LANGUAGE
+        synonyms:
+          - COMMUNICATION_LANGUAGE
+          - CONTENT_LANGUAGE
+          - EMAIL_LANGUAGE
+          - LANGUAGE
+          - LOCALE
+        description: >
+          The language in which the email content is written.
+        expr: EMAIL_LANGUAGE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "JA"
+          - "EN"
+
+      - name: EMAIL_NAME
+        synonyms:
+          - ASSET_NAME
+          - CAMPAIGN_NAME
+          - CREATIVE_NAME
+          - EMAIL_NAME
+          - EMAIL_TITLE
+          - MESSAGE_TITLE
+          - SEND_NAME
+        description: >
+          The name or title assigned to a particular email as a reference for identification.
+        expr: UPPER(EMAIL_NAME)
+        data_type: VARCHAR(50331648)
+        sample_values:
+          - "VCUK_NOT_CENEWS_20251218_B2C_global-enewsletter-December-2025-All_EDM1_V2_EN"
+          - "VCZA_NOT_CENEWS_20250625_B2C_global-enewsletter-June-2025-All_EDM1_V1_EN"
+          - "VCFI_CPROG_OTD_Redesign_Accessories_EDM2_V3_SEFI"
+
+      - name: EMAIL_NAME_CLEANSED
+        synonyms:
+          - CLEAN_NAME
+          - CLEANSED_NAME
+          - NORMALIZED_NAME
+          - STANDARDIZED_NAME
+        description: >
+          The email name that has been modified for consistency or analysis purposes.
+          Cleaner version of EMAIL_NAME for grouping and reporting.
+        expr: EMAIL_NAME_CLEANSED
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "6monthplus_6monthplus"
+          - "TestDrive_XC40UltraB3"
+          - "POP Service - Service Reminder Y1 v3 2504"
+
+      - name: EMAIL_SEND_NUMBER
+        synonyms:
+          - DROP_NUMBER
+          - EDM
+          - EDM_NUMBER
+          - SEND_NUMBER
+          - SEND_SEQUENCE
+          - SEND_WAVE
+          - SEQUENCE
+          - WAVE
+        description: >
+          EDM plus a sequential number representing the sent emails in a campaign, representing different sends part of the same campaign 
+        expr: EMAIL_SEND_NUMBER
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "EDM9"
+          - "EDM0"
+          - "EDM4"
+
+      - name: EMAIL_SEND_PROCESS
+        synonyms:
+          - CREATION_PROCESS
+          - DIRECT_ENGINE
+          - EMAIL_PROCESS
+          - ENGINE
+          - PLATFORM
+          - SEND_PROCESS
+        description: >
+          The workflow involved in the preparation and dispatch of an email campaign.
+        expr: EMAIL_SEND_PROCESS
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "Outside Direct Engine"
+          - "Direct Engine"
+
+      - name: EMAIL_SOURCE
+        synonyms:
+          - CREATION_SOURCE
+          - EMAIL_SOURCE
+          - ORIGIN_PLATFORM
+          - SOURCE
+        description: >
+          The origin of the email's content, list, or creative elements.
+        expr: EMAIL_SOURCE
+        data_type: VARCHAR(8)
+        sample_values:
+          - "Catalyst"
+          - "SFMC"
+
+      - name: EMAIL_SUBJECT_LINE
+        synonyms:
+          - EMAIL_SUBJECT
+          - HEADLINE
+          - SL
+          - SUBJECT
+          - SUBJECT_LINE
+          - TITLE
+        description: >
+          The subject line text used in the email campaign.
+        expr: EMAIL_SUBJECT_LINE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "La tua garanzia Volvo è in scadenza."
+          - "Meet the refreshed XC60"
+          - "Innovaciones de Volvo. Las puedes tener todas"
+
+      - name: EMAIL_VERSION
+        synonyms:
+          - CREATIVE_VERSION
+          - EMAIL_VERSION
+          - REVISION
+          - VARIANT
+          - VERSION
+        description: >
+          The specific variation of an email.
+        expr: EMAIL_VERSION
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "V3"
+          - "V1"
+
+      - name: GEOGRAPHIC_SCOPE
+        synonyms:
+          - CENTRAL_OR_LOCAL
+          - GEO_SCOPE
+          - GEOGRAPHIC_SCOPE
+          - REGION_SCOPE
+          - SCOPE
+        description: >
+          The range of areas covered by the campaign.
+          Values: Central, Local.
+        expr: GEOGRAPHIC_SCOPE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "Local"
+          - "Central"
+
+      - name: PROGRAM_NAMES
+        synonyms:
+          - AUTOMATION_NAME
+          - JOURNEY_NAME
+          - PROGRAM
+          - PROGRAM_IDENTIFIER
+          - PROGRAM_NAME
+        description: >
+          The names of marketing programs within an organization.
+        expr: PROGRAM_NAMES
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "first-year-program"
+          - "service-reminder"
+
+      - name: PROGRAM_OR_COMPAIGN
+        synonyms:
+          - CAMPAIGN_TYPE
+          - COMMUNICATION_TYPE
+          - CONTENT_TYPE
+          - EMAIL_TYPE
+          - PROGRAM_OR_CAMPAIGN
+          - TYPE
+        description: >
+          Classifies email communication type based on email naming conventions.
+          - 'Program': Automated lifecycle emails. Identified by 'CPROG' in name, or patterns like 'order to delivery', 'lead nurture', 'volvo cars app', 'first year', 'FYP', 'service reminder'
+          - 'E-newsletter': News communications. Identified by 'CENEWS' in name, or patterns like 'global-enewsletter', 'Enewsletter', 'E_newsletter'
+          - 'Campaign': Marketing campaign emails (default for other emails). Fixed sends based on business objectives.
+          IMPORTANT: When user asks about "campaign" or "campaigns" in general (without specifying a campaign name), they are referring to the CATEGORY 'Campaign', not a specific email name. Always filter by program_or_compaign = 'Campaign' unless the user provides a specific campaign name.
+        expr: PROGRAM_OR_COMPAIGN
+        data_type: VARCHAR(12)
+        sample_values:
+          - "Program"
+          - "E-newsletter"
+          - "Campaign"
+
+      - name: SEND_ID
+        synonyms:
+          - EMAIL_JOB
+          - JOB_ID
+          - JOB_NUMBER
+          - SEND_IDENTIFIER
+          - SEND_JOB
+        description: >
+          The ID associated with the send.
+        expr: SEND_ID
+        data_type: NUMBER(38,0)
+        sample_values:
+          - "2220086"
+          - "2202698"
+          - "2189614"
+
+      - name: SEND_TYPE
+        synonyms:
+          - DELIVERY_TYPE
+          - EMAIL_SEND_TYPE
+          - SEND_TYPE
+        description: >
+          The classification of an email send based on its purpose.
+          Values: Program, Campaign.
+        expr: SEND_TYPE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - "Program"
+          - "E-newsletter"
+
+    # ── Date ────────────────────────────────────────────────────────────────
+    time_dimensions:
+      - name: SEND_DATE
+        synonyms:
+          - CAMPAIGN_DATE
+          - DATE
+          - DATE_SENT
+          - EMAIL_DATE
+          - SEND_DATE
+          - SENT_DATE
+        description: >
+          The date on which an email was sent to recipients.
+          Use for time-based analysis of campaign metadata.
+        expr: SEND_DATE
+        data_type: DATE
+        sample_values:
+          - "2025-12-09"
+          - "2025-09-01"
+          - "2025-10-10"
+
+    # ── Filters ────────────────────────────────────────────────────────────────
+    filters:
+      - name: campaign
+        description: >
+          Use this filter when user asks about "campaign" or "campaigns" as a CATEGORY (not a specific campaign name).
+          This filter ensures only 'Campaign' category emails are included (fixed sends based on business objectives like new model launches), excluding Programs and E-newsletters.
+        expr: program_or_compaign = 'Campaign'
+
+      - name: catalyst_emails
+        description: >
+          Direct engine emails - briefed and created through Catalyst platform
+        expr: EMAIL_SOURCE = 'Catalyst'
+
+      - name: central_campaign
+        description: >
+          Program emails with central/global scope. Use when user asks about "central campaigns" ,"HQ campaigns", or "centrally managed campaigns".
+        expr: GEOGRAPHIC_SCOPE = 'Central' AND PROGRAM_OR_COMPAIGN = 'Campaign'
+
+      - name: central_program
+        description: >
+          Program emails with central/global scope. Use when user asks about "central programs" ,"HQ programs", or "centrally managed programs".
+        expr: GEOGRAPHIC_SCOPE = 'Central' AND PROGRAM_OR_COMPAIGN = 'Program'
+
+      - name: direct_engine
+        description: >
+          Emails briefed and created through the Catalyst direct engine platform. Use when user asks about "direct engine", "Catalyst emails", "Catalyst briefed", or "DE emails".
+        expr: EMAIL_SEND_PROCESS = 'Direct Engine'
+
+      - name: direct_engine_campaign
+        description: >
+          Marketing campaign emails created through Catalyst. Use when user asks about "direct engine campaigns", "Catalyst campaigns", or "DE campaigns".
+        expr: EMAIL_SEND_PROCESS = 'Direct Engine' AND PROGRAM_OR_COMPAIGN ='Campaign'
+
+      - name: direct_engine_enewsletter
+        description: >
+          E-newsletter emails created through Catalyst. Use when user asks about "direct engine newsletters", "Catalyst newsletters", or "DE enews".
+        expr: EMAIL_SEND_PROCESS = 'Direct Engine' AND PROGRAM_OR_COMPAIGN = 'E-newsletter'
+
+      - name: direct_engine_program
+        description: >
+          Automated program emails created through Catalyst. Use when user asks about "direct engine programs", "Catalyst programs", or "DE programs".
+        expr: EMAIL_SEND_PROCESS = 'Direct Engine' AND PROGRAM_OR_COMPAIGN = 'Program'
+
+      - name: eNewsletters
+        description: >
+          'Use on campaign metadata to include only programs based on category is ''E-newsletter''. Use when user asks about "global eNewsletter", "Enewsletter", "E_newsletter", "Enews". eNewsletters: monthly newsletters (not sent in all markets, and not always monthly) , news communications. Identified by ''CENEWS'' in name, or patterns like ''global-enewsletter'', ''Enewsletter'', ''E_newsletter'''
+        expr: program_or_compaign = 'E-newsletter'
+
+      - name: first_year_program
+        description: >
+          First Year Program emails - automated emails for customers in their first year of ownership. Use when user asks about "first year program", "FYP", "first year", "new owner program", or "year one".
+        expr: PROGRAM_OR_COMPAIGN = 'Program' AND PROGRAM_NAMES ILIKE '%first-year-program%'
+
+      - name: Is_AB_test
+        description: >
+          AB Testing Boolean flag
+        expr: AB_TESTING IS NOT NULL
+
+      - name: lead_nurture_program
+        description: >
+          Lead Nurture Program emails - automated nurturing sequence for leads. Use when user asks about "lead nurture", "LNP", "lead nurturing", "nurture program", or "lead program".
+        expr: PROGRAM_OR_COMPAIGN = 'Program' AND (PROGRAM_NAMES ILIKE '%lead-nurture%' OR PROGRAM_NAMES ILIKE '%lead-nurture-2%' OR PROGRAM_NAMES ILIKE '%LNP%')
+
+      - name: local_program
+        description: >
+          Program emails with local/market-specific scope. Use when user asks about "local programs", "market-specific programs", or "local automated emails".
+        expr: GEOGRAPHIC_SCOPE = 'Local' AND PROGRAM_OR_COMPAIGN = 'Program'
+
+      - name: order_to_delivery_program
+        description: >
+          Order to Delivery Program emails - automated emails tracking customer journey from order to vehicle delivery. Use when user asks about "order to delivery", "O2D", "OTD", "delivery program", or "order program".
+        expr: PROGRAM_OR_COMPAIGN = 'Program' AND PROGRAM_NAMES ILIKE '%order-to-delivery%'
+
+      - name: outside_direct_engine
+        description: >
+          Emails created outside the Catalyst platform, directly in SFMC. Use when user asks about "outside direct engine", "non-Catalyst", "ODE", "SFMC direct", or "manual emails".
+        expr: EMAIL_SEND_PROCESS = 'Outside Direct Engine'
+
+      - name: outside_direct_engine_campaign
+        description: >
+          Marketing campaign emails created outside Catalyst. Use when user asks about "ODE campaigns", "non-Catalyst campaigns", or "manual campaigns".
+        expr: EMAIL_SEND_PROCESS = 'Outside Direct Engine' AND PROGRAM_OR_COMPAIGN = 'Campaign'
+
+      - name: outside_direct_engine_program
+        description: >
+          Automated program emails created outside Catalyst (directly in SFMC). Use when user asks about "ODE programs", "non-Catalyst programs", or "manual programs".
+        expr: EMAIL_SEND_PROCESS = 'Outside Direct Engine' AND PROGRAM_OR_COMPAIGN = 'Program'
+
+      - name: program
+        description: >
+          'Use on campaign metadata to include only programs based on category is ''Program''. Programs: triggered emails, based on behaviour (ex. first year after buying a car), automated lifecycle emails. Identified by ''CPROG'' in name, or patterns like ''order to delivery'', ''lead nurture'', ''volvo cars app'', ''first year'', ''FYP'', ''service reminder'''
+        expr: program_or_compaign = 'Program'
+
+      - name: renew_program
+        description: >
+          Renew Program emails - automated renewal/retention emails for existing customers. Use when user asks about "renew program", "renewal", "retention program", "renew emails", or "customer renewal".
+        expr: PROGRAM_OR_COMPAIGN = 'Program' AND EMAIL_NAME ILIKE '%cprog_renew_%' AND EMAIL_NAME NOT ILIKE '%test%'
+
+      - name: sfmc_emails
+        description: >
+          Outside direct engine - emails created directly in Salesforce Marketing Cloud
+        expr: email_source = 'SFMC'
+
+    # ── Metrics ────────────────────────────────────────────────────────────────
+    metrics:
+      - name: UNIQUE_CAMPAIGN_COUNT
+        description: >
+          Counts the number of distinct email campaigns or email names. Use when questions ask about 'number of campaigns', 'how many emails', 'campaign count', 'email variety', or 'campaign diversity'. Helps measure campaign activity volume, analyze campaign portfolio size, and compare campaign frequency across different time periods, markets, or campaign types.
+        expr: COUNT(DISTINCT email_name)
+        access_modifier: public_access
+
+    # ── Primary_key ────────────────────────────────────────────────────────────────
+    primary_key:
+      columns:
+        - COMP_KEY

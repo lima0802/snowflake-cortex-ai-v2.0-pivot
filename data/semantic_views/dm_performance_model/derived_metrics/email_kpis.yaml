@@ -1,0 +1,167 @@
+---
+# =============================================================================
+# MODULE: derived_metrics — SFMC email KPIs
+# Purpose: Define KPI metrics for AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING.
+# Owned by: Analytics team
+#
+# Structure follows the Snowflake Semantic View YAML spec:
+#   https://docs.snowflake.com/en/user-guide/views-semantic/semantic-view-yaml-spec
+#
+# Each entry in 'tables' must match a 'name' defined in logical_tables/.
+# Raw facts (SENDS, BOUNCES, etc.) live in logical_tables/ as facts:.
+# This file defines aggregated volume metrics and derived rate KPIs.
+# =============================================================================
+
+tables:
+  - name: AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING
+
+    metrics:
+      # ── Volume metrics ──────────────────────────────────────────────────────
+      - name: TOTAL_SENDS
+        description: >
+          Total number of email delivery attempts.
+          Use when questions ask about 'total sends', 'emails sent', 'send volume', 'send count'.
+        expr: SUM(SENDS)
+        access_modifier: public_access
+
+      - name: TOTAL_DELIVERED
+        description: >
+          Total delivered emails = SENDS - BOUNCES.
+          Use when questions ask about 'total delivered', 'successful deliveries', 'emails delivered'.
+        expr: SUM(SENDS) - SUM(BOUNCES)
+        access_modifier: public_access
+
+      - name: TOTAL_BOUNCES
+        description: >
+          Total bounced emails (hard + soft).
+          Use when questions ask about 'total bounces', 'bounced emails', 'failed deliveries'.
+        expr: SUM(BOUNCES)
+        access_modifier: public_access
+
+      - name: TOTAL_OPENS
+        description: >
+          Total email opens including multiple opens by the same recipient (gross opens).
+          Use when questions ask about 'total opens', 'gross opens', 'open count'.
+        expr: SUM(OPENS)
+        access_modifier: public_access
+
+      - name: TOTAL_UNIQUE_OPENS
+        description: >
+          Unique recipients who opened (deduplicated). More accurate than gross opens for reach measurement.
+          Use when questions ask about 'unique opens', 'distinct opens', 'individual opens'.
+        expr: SUM(UNIQUE_OPENS)
+        access_modifier: public_access
+
+      - name: TOTAL_CLICKS
+        description: >
+          Total link clicks including multiple clicks by the same recipient (gross clicks).
+          Use when questions ask about 'total clicks', 'gross clicks', 'all clicks'.
+        expr: SUM(CLICKS)
+        access_modifier: public_access
+
+      - name: TOTAL_UNIQUE_CLICKS
+        description: >
+          Unique recipients who clicked (deduplicated). Primary metric for CTR calculations.
+          Use when questions ask about 'unique clicks', 'distinct clicks', 'individual clicks'.
+        expr: SUM(UNIQUE_CLICKS)
+        access_modifier: public_access
+
+      - name: TOTAL_UNSUBSCRIBES
+        description: >
+          Total opt-outs/unsubscribes. Monitor for email fatigue and content relevance.
+          Use when questions ask about 'total unsubscribes', 'opt-outs', 'churn count'.
+        expr: SUM(UNSUBSCRIBES)
+        access_modifier: public_access
+
+      # ── Rate metrics (decimal, for programmatic use) ─────────────────────────
+      - name: OPEN_RATE
+        description: >
+          Open rate as a decimal ratio. Formula: unique_opens / (sends - bounces).
+          Use OPEN_RATE_PCT for human-readable percentage output.
+        expr: ROUND(SUM(UNIQUE_OPENS) / NULLIF(SUM(SENDS) - SUM(BOUNCES), 0), 3)
+        access_modifier: public_access
+
+      - name: CLICK_RATE
+        description: >
+          Click-through rate as a decimal ratio. Formula: unique_clicks / (sends - bounces).
+          Use CLICK_RATE_PCT for human-readable percentage output.
+        expr: ROUND(SUM(UNIQUE_CLICKS) / NULLIF(SUM(SENDS) - SUM(BOUNCES), 0), 3)
+        access_modifier: public_access
+
+      - name: CLICK_TO_OPEN_RATE
+        description: >
+          Click-to-open rate as a decimal ratio. Formula: unique_clicks / unique_opens.
+          Measures content effectiveness for recipients who opened.
+          Use CLICK_TO_OPEN_RATE_PCT for human-readable percentage output.
+        expr: ROUND(SUM(UNIQUE_CLICKS) / NULLIF(SUM(UNIQUE_OPENS), 0), 3)
+        access_modifier: public_access
+
+      - name: BOUNCE_RATE
+        description: >
+          Bounce rate as a decimal ratio. Formula: bounces / sends.
+          Use BOUNCE_RATE_PCT for human-readable percentage output.
+        expr: ROUND(SUM(BOUNCES) / NULLIF(SUM(SENDS), 0), 3)
+        access_modifier: public_access
+
+      - name: UNSUBSCRIBE_RATE
+        description: >
+          Unsubscribe rate as a decimal ratio. Formula: unsubscribes / sends.
+          Use UNSUBSCRIBE_RATE_PCT for human-readable percentage output.
+        expr: ROUND(SUM(UNSUBSCRIBES) / NULLIF(SUM(SENDS), 0), 3)
+        access_modifier: public_access
+
+      - name: DELIVERY_RATE
+        description: >
+          Delivery rate as a decimal ratio. Formula: (sends - bounces) / sends.
+          Use DELIVERY_RATE_PCT for human-readable percentage output.
+        expr: ROUND((SUM(SENDS) - SUM(BOUNCES)) / NULLIF(SUM(SENDS), 0), 3)
+        access_modifier: public_access
+
+      # ── Rate metrics (%, 1 decimal — preferred for display) ──────────────────
+      - name: OPEN_RATE_PCT
+        description: >
+          Open rate as a percentage rounded to 1 decimal (e.g., 22.5%).
+          Formula: unique_opens / (sends - bounces) * 100.
+          Use when questions ask about 'open rate', 'email open percentage', 'open ratio', or 'email reach'.
+        expr: ROUND(100.0 * SUM(UNIQUE_OPENS) / NULLIF(SUM(SENDS) - SUM(BOUNCES), 0), 1)
+        access_modifier: public_access
+
+      - name: CLICK_RATE_PCT
+        description: >
+          Click-through rate as a percentage rounded to 1 decimal (e.g., 2.5%).
+          PRIMARY ENGAGEMENT METRIC. Formula: unique_clicks / (sends - bounces) * 100.
+          Use when questions ask about 'click rate', 'CTR', 'click-through rate', or 'email engagement'.
+        expr: ROUND(100.0 * SUM(UNIQUE_CLICKS) / NULLIF(SUM(SENDS) - SUM(BOUNCES), 0), 1)
+        access_modifier: public_access
+
+      - name: CLICK_TO_OPEN_RATE_PCT
+        description: >
+          Click-to-open rate as a percentage rounded to 1 decimal (e.g., 15.2%).
+          Formula: unique_clicks / unique_opens * 100.
+          Measures content effectiveness for recipients who opened.
+        expr: ROUND(100.0 * SUM(UNIQUE_CLICKS) / NULLIF(SUM(UNIQUE_OPENS), 0), 1)
+        access_modifier: public_access
+
+      - name: BOUNCE_RATE_PCT
+        description: >
+          Bounce rate as a percentage rounded to 1 decimal (e.g., 1.5%).
+          Formula: bounces / sends * 100.
+          Use when questions ask about 'bounce rate', 'bounce percentage', 'delivery failure rate'.
+        expr: ROUND(100.0 * SUM(BOUNCES) / NULLIF(SUM(SENDS), 0), 1)
+        access_modifier: public_access
+
+      - name: UNSUBSCRIBE_RATE_PCT
+        description: >
+          Unsubscribe rate as a percentage rounded to 1 decimal (e.g., 0.3%).
+          Formula: unsubscribes / sends * 100.
+          Use when questions ask about 'unsubscribe rate', 'opt-out rate', 'churn rate'.
+        expr: ROUND(100.0 * SUM(UNSUBSCRIBES) / NULLIF(SUM(SENDS), 0), 1)
+        access_modifier: public_access
+
+      - name: DELIVERY_RATE_PCT
+        description: >
+          Delivery rate as a percentage rounded to 1 decimal (e.g., 98.5%).
+          Formula: (sends - bounces) / sends * 100.
+          Use when questions ask about 'delivery rate', 'deliverability', 'successful delivery rate'.
+        expr: ROUND(100.0 * (SUM(SENDS) - SUM(BOUNCES)) / NULLIF(SUM(SENDS), 0), 1)
+        access_modifier: public_access

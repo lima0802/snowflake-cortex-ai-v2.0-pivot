@@ -1,0 +1,136 @@
+[
+  {
+    "id": "demo_01",
+    "query": "What was the click rate for EX30 campaigns in Spain last month?",
+    "keywords": ["click rate", "ex30", "spain"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "The click rate for EX30 campaigns in Spain last month was **2.34%**, based on 47,832 total clicks across 12 campaigns.\n\nThis is classified as **Average** per VCC benchmark thresholds (Good ≥ 2.5%, Excellent ≥ 3.2%).\n\nCompared to the previous month (2.18%), this represents a **+7.3% improvement**. The highest performing EX30 campaign was \"EX30_Spring_Launch_ES\" with a 3.41% click rate.",
+      "sql": "SELECT\n    ROUND(AVG(click_rate) * 100, 2) AS avg_click_rate_pct,\n    COUNT(DISTINCT campaign_id) AS num_campaigns,\n    SUM(total_clicks) AS total_clicks\nFROM DM.v_email_performance_fact\nWHERE car_model = 'EX30'\n  AND country = 'Spain'\n  AND send_month = DATE_TRUNC('MONTH', DATEADD(MONTH, -1, CURRENT_DATE()))",
+      "data": [
+        {"avg_click_rate_pct": 2.34, "num_campaigns": 12, "total_clicks": 47832}
+      ],
+      "benchmark": "Average",
+      "intent": "descriptive",
+      "confidence": 0.95,
+      "chart_config": null,
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "demo_02",
+    "query": "Compare open rates across Nordic markets for Q4",
+    "keywords": ["compare", "open rate", "nordic"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "Open rate comparison across Nordic markets for Q4:\n\n• **Sweden**: 28.4% — Excellent\n• **Norway**: 25.1% — Good\n• **Denmark**: 22.7% — Good\n• **Finland**: 19.3% — Average\n\nSweden leads with the highest open rate, driven by strong eNewsletter engagement. Finland trails the Nordic average by 4.8 percentage points — consider A/B testing subject lines for the Finnish market.",
+      "sql": "SELECT\n    country,\n    ROUND(AVG(open_rate) * 100, 2) AS avg_open_rate_pct,\n    COUNT(DISTINCT campaign_id) AS num_campaigns\nFROM DM.v_email_performance_fact\nWHERE country IN ('Sweden', 'Norway', 'Denmark', 'Finland')\n  AND send_quarter = 'Q4'\nGROUP BY country\nORDER BY avg_open_rate_pct DESC",
+      "data": [
+        {"country": "Sweden", "avg_open_rate_pct": 28.4, "num_campaigns": 34},
+        {"country": "Norway", "avg_open_rate_pct": 25.1, "num_campaigns": 28},
+        {"country": "Denmark", "avg_open_rate_pct": 22.7, "num_campaigns": 22},
+        {"country": "Finland", "avg_open_rate_pct": 19.3, "num_campaigns": 18}
+      ],
+      "benchmark": "Good",
+      "intent": "descriptive",
+      "confidence": 0.93,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "country", "y_field": "avg_open_rate_pct", "title": "Open Rate by Nordic Market — Q4"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "demo_03",
+    "query": "How did the spring eNewsletter perform?",
+    "keywords": ["spring", "enewsletter", "newsletter"],
+    "intent": "entity_lookup",
+    "response": {
+      "answer": "I found the **Spain March eNewsletter** (eNewsletter_Mar_2026_ES) — here's the performance summary:\n\n• **Open Rate**: 24.6% — Good\n• **Click Rate**: 2.71% — Good\n• **Unsubscribe Rate**: 0.12% — Good\n• **Total Sends**: 156,432\n\nThis eNewsletter performed above the global average across all KPIs. The EX30 content block had the highest engagement with a 4.2% click rate.",
+      "sql": "SELECT\n    campaign_name,\n    ROUND(AVG(open_rate) * 100, 2) AS open_rate_pct,\n    ROUND(AVG(click_rate) * 100, 2) AS click_rate_pct,\n    ROUND(AVG(unsubscribe_rate) * 100, 3) AS unsub_rate_pct,\n    SUM(total_sends) AS total_sends\nFROM DM.v_email_performance_fact\nWHERE campaign_name ILIKE '%eNewsletter%Mar%'\nGROUP BY campaign_name",
+      "data": [
+        {"campaign_name": "eNewsletter_Mar_2026_ES", "open_rate_pct": 24.6, "click_rate_pct": 2.71, "unsub_rate_pct": 0.12, "total_sends": 156432}
+      ],
+      "benchmark": "Good",
+      "intent": "entity_lookup",
+      "confidence": 0.85,
+      "chart_config": null,
+      "processing_steps": ["Classifying intent...", "Searching entities...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "demo_04",
+    "query": "Are there any unusual patterns in Germany this quarter?",
+    "keywords": ["unusual", "anomal", "pattern", "germany"],
+    "intent": "anomaly",
+    "response": {
+      "answer": "🔍 **Anomaly Detection — Germany, Q1 2026**\n\n**2 anomalies detected:**\n\n**1. Click rate drop — Week 8**\nClick rate fell to 0.94%, which is **2.3σ below the rolling mean** (typical range: 2.1–2.6%). This coincides with a batch of campaigns using a new email template with repositioned CTAs.\n\n**2. Unsubscribe spike — Week 10**\nUnsubscribe rate reached 0.42%, **1.9σ above normal** (typical: 0.15–0.25%). Concentrated in the XC90 segment, suggesting audience fatigue in this car model group.\n\n**Recommended actions:**\n• Review the new template's CTA placement and revert if click rates don't recover\n• Investigate XC90 audience fatigue — consider reducing email frequency or refreshing content for this segment\n• Set up automated alerts for ±2σ deviations going forward",
+      "sql": null,
+      "data": null,
+      "benchmark": null,
+      "intent": "anomaly",
+      "confidence": 0.91,
+      "chart_config": null,
+      "processing_steps": ["Classifying intent...", "Detecting anomalies...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "demo_05",
+    "query": "What click rate should we expect for Spain eNewsletters next quarter?",
+    "keywords": ["expect", "forecast", "predict", "next quarter"],
+    "intent": "predictive",
+    "response": {
+      "answer": "📈 **Forecast — Spain eNewsletter Click Rate, Q2 2026**\n\nBased on 18 months of historical data using time-series decomposition:\n\n• **Predicted click rate**: **2.51%** (95% CI: 2.12%–2.89%)\n• **Trend**: Gradual upward trajectory (+0.04pp/month)\n• **Seasonality**: Q2 typically sees +5–8% engagement uplift\n\nThis represents a projected **+7.3% improvement** over the current quarter average of 2.34%.\n\n**Model confidence**: High (MAPE: 11.2% on 6-month validation)\n\n**What this means**: Spain eNewsletter performance is on a positive trajectory. To maximize the Q2 seasonal uplift, consider launching the summer campaign content earlier (mid-April vs. May).",
+      "sql": null,
+      "data": null,
+      "benchmark": null,
+      "intent": "predictive",
+      "confidence": 0.89,
+      "chart_config": null,
+      "processing_steps": ["Classifying intent...", "Generating forecast...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "demo_06",
+    "query": "Show top 5 performing campaigns by click rate",
+    "keywords": ["top", "campaign", "best", "performing"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "**Top 5 Campaigns by Click Rate (All Markets, Last 30 Days):**\n\n| Rank | Campaign | Click Rate | Market |\n|------|----------|-----------|--------|\n| 1 | EX30_Spring_Launch_ES | **3.41%** | Spain |\n| 2 | XC40_Recharge_SE | **3.28%** | Sweden |\n| 3 | EX90_Premium_NO | **3.15%** | Norway |\n| 4 | C40_eNews_Mar_DK | **2.94%** | Denmark |\n| 5 | EX30_Accessories_DE | **2.87%** | Germany |\n\nAll top performers are in the **Good to Excellent** benchmark range. Electric vehicle campaigns (EX30, XC40 Recharge) continue to outperform ICE model campaigns by an average of **+0.6pp**.",
+      "sql": "SELECT\n    campaign_name,\n    country,\n    ROUND(click_rate * 100, 2) AS click_rate_pct,\n    total_sends,\n    total_clicks\nFROM DM.v_email_performance_fact\nWHERE send_date >= DATEADD(DAY, -30, CURRENT_DATE())\nORDER BY click_rate DESC\nLIMIT 5",
+      "data": [
+        {"campaign_name": "EX30_Spring_Launch_ES", "country": "Spain", "click_rate_pct": 3.41, "total_sends": 45230, "total_clicks": 1542},
+        {"campaign_name": "XC40_Recharge_SE", "country": "Sweden", "click_rate_pct": 3.28, "total_sends": 38100, "total_clicks": 1250},
+        {"campaign_name": "EX90_Premium_NO", "country": "Norway", "click_rate_pct": 3.15, "total_sends": 22400, "total_clicks": 706},
+        {"campaign_name": "C40_eNews_Mar_DK", "country": "Denmark", "click_rate_pct": 2.94, "total_sends": 31200, "total_clicks": 917},
+        {"campaign_name": "EX30_Accessories_DE", "country": "Germany", "click_rate_pct": 2.87, "total_sends": 67800, "total_clicks": 1946}
+      ],
+      "benchmark": "Excellent",
+      "intent": "descriptive",
+      "confidence": 0.94,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "campaign_name", "y_field": "click_rate_pct", "title": "Top 5 Campaigns by Click Rate"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "demo_07",
+    "query": "Give me a summary of our best and worst performing markets this quarter",
+    "keywords": ["summary", "best", "worst", "market"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "📊 **Q1 2026 Market Performance Summary**\n\n**Top 3 Markets (by avg click rate):**\n• **Sweden**: 2.89% ↑ — Excellent\n• **Norway**: 2.64% ↑ — Good\n• **Spain**: 2.34% → — Average (improving)\n\n**Bottom 3 Markets:**\n• **Italy**: 1.42% ↓ — Poor\n• **France**: 1.58% → — Poor\n• **Belgium**: 1.71% → — Average\n\n**Key Insights:**\n1. Nordic markets consistently outperform Southern European markets by **+1.1pp** on average\n2. Italy has declined **18% quarter-over-quarter** — recommend immediate campaign audit\n3. Spain is the most improved market (+7.3% MoM), suggesting recent template changes are working\n\n**Recommendation:** Replicate Swedish campaign template structure (shorter subject lines, single CTA, mobile-first layout) in underperforming markets as a pilot program.",
+      "sql": "SELECT\n    country,\n    ROUND(AVG(click_rate) * 100, 2) AS avg_click_rate_pct,\n    COUNT(DISTINCT campaign_id) AS campaigns,\n    SUM(total_sends) AS total_sends\nFROM DM.v_email_performance_fact\nWHERE send_quarter = 'Q1' AND YEAR(send_date) = 2026\nGROUP BY country\nORDER BY avg_click_rate_pct DESC",
+      "data": [
+        {"country": "Sweden", "avg_click_rate_pct": 2.89, "campaigns": 42, "total_sends": 285000},
+        {"country": "Norway", "avg_click_rate_pct": 2.64, "campaigns": 36, "total_sends": 198000},
+        {"country": "Spain", "avg_click_rate_pct": 2.34, "campaigns": 48, "total_sends": 412000},
+        {"country": "Belgium", "avg_click_rate_pct": 1.71, "campaigns": 15, "total_sends": 67000},
+        {"country": "France", "avg_click_rate_pct": 1.58, "campaigns": 32, "total_sends": 245000},
+        {"country": "Italy", "avg_click_rate_pct": 1.42, "campaigns": 28, "total_sends": 189000}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.92,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "country", "y_field": "avg_click_rate_pct", "title": "Market Performance — Q1 2026 Click Rate"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  }
+]

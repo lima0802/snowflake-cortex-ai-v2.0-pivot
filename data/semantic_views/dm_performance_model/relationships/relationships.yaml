@@ -1,0 +1,63 @@
+---
+# =============================================================================
+# MODULE: relationships — Join definitions between logical tables
+# Purpose: Define how fact and dimension tables connect.
+#
+# Standard join pattern (always use this):
+#   FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+#   LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+#
+# INNER JOIN AGENT_V_DIM_COUNTRY only when filtering by region/market.
+# =============================================================================
+
+relationships:
+
+  - name: fact_to_metadata
+    description: >
+      Primary relationship: performance fact to campaign metadata dimension.
+      Always LEFT JOIN to preserve all fact records even when metadata is missing.
+    left_table: AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING
+    right_table: AGENT_V_DIM_SFMC_METADATA_JOB
+    join_type: left
+    join_columns:
+      - left: COMP_KEY
+        right: COMP_KEY
+    sql_pattern: >
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+
+  - name: metadata_to_country
+    description: >
+      Campaign metadata to country/region dimension.
+      Use INNER JOIN only when filtering by region (region_name_group) or country.
+      region_name_group values: EMEA, APEC, US/CAN, LATAM, Other
+    left_table: AGENT_V_DIM_SFMC_METADATA_JOB
+    right_table: AGENT_V_DIM_COUNTRY
+    join_type: inner
+    join_columns:
+      - left: BUSINESS_UNIT
+        right: VC_COUNTRY_CODE
+    sql_pattern: >
+      INNER JOIN AGENT_V_DIM_COUNTRY c ON m.business_unit = c.vc_country_code
+
+  - name: block_to_metadata
+    description: >
+      Block-level click fact to campaign metadata.
+      Use when analyzing click performance by content block or link type.
+    left_table: AGENT_V_FACT_SFMC_PERFORMANCE_BLOCK
+    right_table: AGENT_V_DIM_SFMC_METADATA_JOB
+    join_type: left
+    join_columns:
+      - left: COMP_KEY
+        right: COMP_KEY
+
+  - name: block_to_alias
+    description: >
+      Block-level click fact to alias dimension for link/block metadata.
+      Join on ALIAS to get block type, link type, link text, block position.
+    left_table: AGENT_V_FACT_SFMC_PERFORMANCE_BLOCK
+    right_table: AGENT_V_DIM_SFMC_ALIAS
+    join_type: left
+    join_columns:
+      - left: ALIAS
+        right: ALIAS

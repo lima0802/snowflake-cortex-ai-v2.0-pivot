@@ -1,0 +1,28 @@
+# DIA v2 — Snowflake Connection Test (Docker)
+# ============================================
+# Runs the Snowflake connection test suite inside a container,
+# matching the same Python environment used by the main stack.
+#
+# Usage:
+#   # One-shot test run (exits with 0 = pass, 1 = fail)
+#   docker-compose -f test/docker-compose.test.yml run --rm snowflake-test
+#
+# Prerequisites:
+#   • .env file in the project root (copy from .env.example and fill credentials)
+#   • Docker Desktop running
+
+services:
+  snowflake-test:
+    build:
+      context: ..                        # project root — same as main stack
+      dockerfile: deploy/Dockerfile      # reuse the existing Dockerfile
+    # Override the default CMD to run only the test script
+    command: python test/test_snowflake_connection.py
+    env_file:
+      - ../.env                          # reads credentials from project root .env
+    environment:
+      # Ensure output is not buffered so logs appear in real-time
+      - PYTHONUNBUFFERED=1
+    # No ports needed — this is a test-only container
+    # No volumes needed — code is baked in via COPY . .
+    restart: "no"                        # exit after test completes
