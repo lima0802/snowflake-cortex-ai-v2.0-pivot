@@ -73,25 +73,34 @@ class EmbeddingConfig:
 
 
 class SnowflakeConfig:
-    """Snowflake connection settings."""
-    ACCOUNT   = os.getenv("SNOWFLAKE_ACCOUNT")
-    USER      = os.getenv("SNOWFLAKE_USER")
-    PASSWORD  = os.getenv("SNOWFLAKE_PASSWORD")
+    """Snowflake connection settings. All values read at call time (not import time)."""
     WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE", "DIA_WH")
-    DATABASE  = os.getenv("SNOWFLAKE_DATABASE",  "DEV_MARCOM_DB")
+    DATABASE  = os.getenv("SNOWFLAKE_DATABASE",  "PLAYGROUND_LM")
     SCHEMA    = os.getenv("SNOWFLAKE_SCHEMA",    "CORTEX_ANALYTICS_ORCHESTRATOR")
-    ROLE      = os.getenv("SNOWFLAKE_ROLE",      "DIA_ANALYST_ROLE")
+    ROLE      = os.getenv("SNOWFLAKE_ROLE",      "SYSADMIN")
+
+    @staticmethod
+    def _get(key: str, default: str = None) -> str:
+        """Read from env first, then st.secrets (Streamlit Cloud), then default."""
+        val = os.getenv(key)
+        if not val:
+            try:
+                import streamlit as st
+                val = st.secrets.get(key, default)
+            except Exception:
+                val = default
+        return val
 
     @staticmethod
     def connection_params() -> dict:
         return {
-            "account":   SnowflakeConfig.ACCOUNT,
-            "user":      SnowflakeConfig.USER,
-            "password":  SnowflakeConfig.PASSWORD,
-            "warehouse": SnowflakeConfig.WAREHOUSE,
-            "database":  SnowflakeConfig.DATABASE,
-            "schema":    SnowflakeConfig.SCHEMA,
-            "role":      SnowflakeConfig.ROLE,
+            "account":   SnowflakeConfig._get("SNOWFLAKE_ACCOUNT"),
+            "user":      SnowflakeConfig._get("SNOWFLAKE_USER"),
+            "password":  SnowflakeConfig._get("SNOWFLAKE_PASSWORD"),
+            "warehouse": SnowflakeConfig._get("SNOWFLAKE_WAREHOUSE", "DIA_WH"),
+            "database":  SnowflakeConfig._get("SNOWFLAKE_DATABASE",  "PLAYGROUND_LM"),
+            "schema":    SnowflakeConfig._get("SNOWFLAKE_SCHEMA",    "CORTEX_ANALYTICS_ORCHESTRATOR"),
+            "role":      SnowflakeConfig._get("SNOWFLAKE_ROLE",      "SYSADMIN"),
         }
 
 
