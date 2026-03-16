@@ -4,30 +4,29 @@
 # For Docker/VM deployment, use the root requirements.txt instead.
 
 # --- UI ---
-streamlit==1.40.0
-plotly==5.24.0
-markdown==3.7
+streamlit>=1.40.0
+plotly>=5.24.0
+markdown>=3.7
 
 # --- Agent / LLM ---
 openai>=1.54.0
-langchain==0.3.7
-langchain-core==0.3.17
-langgraph==0.2.45
-langchain-openai==0.2.8
+langchain>=0.3.7
+langchain-core>=0.3.17
+langgraph>=0.2.45
+langchain-openai>=0.2.8
 
 # --- Snowflake ---
-snowflake-connector-python==3.12.3
+snowflake-connector-python>=3.9.0
 
 # --- RAG ---
-faiss-cpu==1.9.0
+faiss-cpu>=1.7.4
 
 # --- ML ---
-prophet==1.1.6
-scipy==1.14.0
-pandas==2.2.3
-numpy==1.26.4
+scipy>=1.11.0
+pandas>=2.0.0
+numpy>=1.26.0
 
 # --- Utilities ---
-pyyaml==6.0.2
-python-dotenv==1.0.1
-tenacity==9.0.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+tenacity>=8.0.0
