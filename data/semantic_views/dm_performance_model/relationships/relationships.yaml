@@ -44,20 +44,45 @@ relationships:
     description: >
       Block-level click fact to campaign metadata.
       Use when analyzing click performance by content block or link type.
+      IMPORTANT: To filter block queries by country/market, join via metadata:
+      INNER JOIN AGENT_V_DIM_COUNTRY c ON m.business_unit = c.vc_country_code
+      Never join AGENT_V_DIM_COUNTRY directly on b.business_unit.
     left_table: AGENT_V_FACT_SFMC_PERFORMANCE_BLOCK
     right_table: AGENT_V_DIM_SFMC_METADATA_JOB
     join_type: left
     join_columns:
       - left: COMP_KEY
         right: COMP_KEY
+    sql_pattern: >
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_BLOCK b
+      LEFT JOIN AGENT_V_DIM_SFMC_ALIAS a ON b.alias = a.alias
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON b.comp_key = m.comp_key
+      INNER JOIN AGENT_V_DIM_COUNTRY c ON m.business_unit = c.vc_country_code
 
   - name: block_to_alias
     description: >
       Block-level click fact to alias dimension for link/block metadata.
       Join on ALIAS to get block type, link type, link text, block position.
+      CRITICAL: AGENT_V_DIM_SFMC_ALIAS joins on ALIAS column, NEVER on comp_key.
     left_table: AGENT_V_FACT_SFMC_PERFORMANCE_BLOCK
     right_table: AGENT_V_DIM_SFMC_ALIAS
     join_type: left
     join_columns:
       - left: ALIAS
         right: ALIAS
+    sql_pattern: >
+      LEFT JOIN AGENT_V_DIM_SFMC_ALIAS a ON b.alias = a.alias
+
+  - name: tracking_to_alias
+    description: >
+      Performance tracking fact to alias dimension.
+      CRITICAL: AGENT_V_DIM_SFMC_ALIAS joins on ALIAS column, NEVER on comp_key.
+      Use only when alias-level breakdown is needed from the tracking fact.
+    left_table: AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING
+    right_table: AGENT_V_DIM_SFMC_ALIAS
+    join_type: left
+    join_columns:
+      - left: ALIAS
+        right: ALIAS
+    sql_pattern: >
+      LEFT JOIN AGENT_V_DIM_SFMC_ALIAS a ON f.alias = a.alias

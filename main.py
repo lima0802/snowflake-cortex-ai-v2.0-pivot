@@ -96,6 +96,18 @@ class HealthResponse(BaseModel):
 
 # --- Endpoints ---
 
+@app.post("/reload")
+async def reload_all():
+    """Hot-reload all YAML files and prompts without restarting the server."""
+    from agent.intent import reload_prompt as reload_intent_prompt
+    from agent.synthesizer import reload_prompt as reload_synth_prompt
+    from agent.text_to_sql import reload_context
+    reload_intent_prompt()
+    reload_synth_prompt()
+    reload_context()
+    return {"status": "reloaded"}
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check for monitoring and Teams bot registration."""

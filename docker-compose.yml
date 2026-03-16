@@ -1,8 +1,6 @@
 # DIA v2 - Docker Compose
 # Run: docker-compose up --build
-# Access: Streamlit at http://localhost:8501, API at http://localhost:8000
-
-version: "3.8"
+# Access: Streamlit at http://localhost:8502, API at http://localhost:8002
 
 services:
   api:
@@ -11,7 +9,7 @@ services:
       dockerfile: deploy/Dockerfile
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     ports:
-      - "8000:8000"
+      - "8002:8000"
     env_file:
       - .env
     healthcheck:
@@ -26,10 +24,11 @@ services:
       dockerfile: deploy/Dockerfile
     command: streamlit run ui/streamlit_app.py --server.port=8501 --server.address=0.0.0.0
     ports:
-      - "8501:8501"
+      - "8502:8501"
     env_file:
       - .env
     environment:
       - DIA_API_URL=http://api:8000
     depends_on:
-      - api
+      api:
+        condition: service_healthy

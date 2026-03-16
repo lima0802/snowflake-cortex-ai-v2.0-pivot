@@ -1,16 +1,21 @@
 [
   {
-    "id": "demo_01",
-    "query": "What was the click rate for EX30 campaigns in Spain last month?",
-    "keywords": ["click rate", "ex30", "spain"],
+    "id": "golden_01",
+    "query": "What was the open rate for last month's global eDM campaign?",
+    "keywords": ["open rate", "last month", "global", "edm", "campaign"],
     "intent": "descriptive",
     "response": {
-      "answer": "The click rate for EX30 campaigns in Spain last month was **2.34%**, based on 47,832 total clicks across 12 campaigns.\n\nThis is classified as **Average** per VCC benchmark thresholds (Good ≥ 2.5%, Excellent ≥ 3.2%).\n\nCompared to the previous month (2.18%), this represents a **+7.3% improvement**. The highest performing EX30 campaign was \"EX30_Spring_Launch_ES\" with a 3.41% click rate.",
-      "sql": "SELECT\n    ROUND(AVG(click_rate) * 100, 2) AS avg_click_rate_pct,\n    COUNT(DISTINCT campaign_id) AS num_campaigns,\n    SUM(total_clicks) AS total_clicks\nFROM DM.v_email_performance_fact\nWHERE car_model = 'EX30'\n  AND country = 'Spain'\n  AND send_month = DATE_TRUNC('MONTH', DATEADD(MONTH, -1, CURRENT_DATE()))",
+      "answer": "Last month's global (Central scope) eDM Campaign open rate was **21.97%** (click rate **2.40%**) based on **1,050,575** sends across **160** campaigns (Feb 2026).",
+      "sql": "SELECT\n  ROUND(SUM(f.UNIQUE_OPENS) * 100.0 / NULLIF(SUM(f.SENDS) - SUM(f.BOUNCES), 0), 2) AS open_rate_pct,\n  ROUND(SUM(f.UNIQUE_CLICKS) * 100.0 / NULLIF(SUM(f.SENDS) - SUM(f.BOUNCES), 0), 2) AS click_rate_pct,\n  SUM(f.SENDS) AS sends,\n  COUNT(DISTINCT m.EMAIL_NAME) AS campaigns\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nJOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m\n  ON m.COMP_KEY = f.COMP_KEY\nWHERE m.PROGRAM_OR_COMPAIGN = 'Campaign'\n  AND m.GEOGRAPHIC_SCOPE = 'Central'\n  AND f.SEND_DATE BETWEEN '2026-02-01' AND '2026-02-28';",
       "data": [
-        {"avg_click_rate_pct": 2.34, "num_campaigns": 12, "total_clicks": 47832}
+        {
+          "open_rate_pct": 21.97,
+          "click_rate_pct": 2.4,
+          "sends": 1050575,
+          "campaigns": 160
+        }
       ],
-      "benchmark": "Average",
+      "benchmark": null,
       "intent": "descriptive",
       "confidence": 0.95,
       "chart_config": null,
@@ -18,118 +23,351 @@
     }
   },
   {
-    "id": "demo_02",
-    "query": "Compare open rates across Nordic markets for Q4",
-    "keywords": ["compare", "open rate", "nordic"],
+    "id": "golden_02",
+    "query": "Show me the click-through rate trend for the past six months in Europe",
+    "keywords": ["click-through rate", "trend", "six months", "europe", "emea"],
     "intent": "descriptive",
     "response": {
-      "answer": "Open rate comparison across Nordic markets for Q4:\n\n• **Sweden**: 28.4% — Excellent\n• **Norway**: 25.1% — Good\n• **Denmark**: 22.7% — Good\n• **Finland**: 19.3% — Average\n\nSweden leads with the highest open rate, driven by strong eNewsletter engagement. Finland trails the Nordic average by 4.8 percentage points — consider A/B testing subject lines for the Finnish market.",
-      "sql": "SELECT\n    country,\n    ROUND(AVG(open_rate) * 100, 2) AS avg_open_rate_pct,\n    COUNT(DISTINCT campaign_id) AS num_campaigns\nFROM DM.v_email_performance_fact\nWHERE country IN ('Sweden', 'Norway', 'Denmark', 'Finland')\n  AND send_quarter = 'Q4'\nGROUP BY country\nORDER BY avg_open_rate_pct DESC",
+      "answer": "Europe (EMEA) click-through rate trend for the last 6 months (Oct 2025–Mar 2026) is shown by month below. CTR ranges from **2.19%** to **2.29%** over the period.",
+      "sql": "SELECT\n  DATE_TRUNC('month', f.SEND_DATE) AS month,\n  ROUND(SUM(f.UNIQUE_CLICKS) * 100.0 / NULLIF(SUM(f.SENDS) - SUM(f.BOUNCES), 0), 2) AS click_rate_pct,\n  SUM(f.SENDS) AS sends\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nJOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_COUNTRY c\n  ON c.VC_COUNTRY_CODE = f.BUSINESS_UNIT\nWHERE c.REGION_NAME_GROUP = 'EMEA'\n  AND f.SEND_DATE BETWEEN '2025-10-01' AND '2026-03-15'\nGROUP BY 1\nORDER BY 1;",
       "data": [
-        {"country": "Sweden", "avg_open_rate_pct": 28.4, "num_campaigns": 34},
-        {"country": "Norway", "avg_open_rate_pct": 25.1, "num_campaigns": 28},
-        {"country": "Denmark", "avg_open_rate_pct": 22.7, "num_campaigns": 22},
-        {"country": "Finland", "avg_open_rate_pct": 19.3, "num_campaigns": 18}
+        {"month": "2025-10-01", "click_rate_pct": 2.26, "sends": 2512936},
+        {"month": "2025-11-01", "click_rate_pct": 2.29, "sends": 2608254},
+        {"month": "2025-12-01", "click_rate_pct": 2.26, "sends": 2965713},
+        {"month": "2026-01-01", "click_rate_pct": 2.19, "sends": 3373959},
+        {"month": "2026-02-01", "click_rate_pct": 2.25, "sends": 3586928},
+        {"month": "2026-03-01", "click_rate_pct": 2.25, "sends": 2015606}
       ],
-      "benchmark": "Good",
+      "benchmark": null,
       "intent": "descriptive",
       "confidence": 0.93,
-      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "country", "y_field": "avg_open_rate_pct", "title": "Open Rate by Nordic Market — Q4"},
+      "chart_config": {"show_chart": true, "chart_type": "line", "x_field": "month", "y_field": "click_rate_pct", "title": "EMEA Click-Through Rate Trend — Last 6 Months"},
       "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
     }
   },
   {
-    "id": "demo_03",
-    "query": "How did the spring eNewsletter perform?",
-    "keywords": ["spring", "enewsletter", "newsletter"],
-    "intent": "entity_lookup",
-    "response": {
-      "answer": "I found the **Spain March eNewsletter** (eNewsletter_Mar_2026_ES) — here's the performance summary:\n\n• **Open Rate**: 24.6% — Good\n• **Click Rate**: 2.71% — Good\n• **Unsubscribe Rate**: 0.12% — Good\n• **Total Sends**: 156,432\n\nThis eNewsletter performed above the global average across all KPIs. The EX30 content block had the highest engagement with a 4.2% click rate.",
-      "sql": "SELECT\n    campaign_name,\n    ROUND(AVG(open_rate) * 100, 2) AS open_rate_pct,\n    ROUND(AVG(click_rate) * 100, 2) AS click_rate_pct,\n    ROUND(AVG(unsubscribe_rate) * 100, 3) AS unsub_rate_pct,\n    SUM(total_sends) AS total_sends\nFROM DM.v_email_performance_fact\nWHERE campaign_name ILIKE '%eNewsletter%Mar%'\nGROUP BY campaign_name",
-      "data": [
-        {"campaign_name": "eNewsletter_Mar_2026_ES", "open_rate_pct": 24.6, "click_rate_pct": 2.71, "unsub_rate_pct": 0.12, "total_sends": 156432}
-      ],
-      "benchmark": "Good",
-      "intent": "entity_lookup",
-      "confidence": 0.85,
-      "chart_config": null,
-      "processing_steps": ["Classifying intent...", "Searching entities...", "Generating SQL...", "Executing query...", "Analyzing results..."]
-    }
-  },
-  {
-    "id": "demo_04",
-    "query": "Are there any unusual patterns in Germany this quarter?",
-    "keywords": ["unusual", "anomal", "pattern", "germany"],
-    "intent": "anomaly",
-    "response": {
-      "answer": "🔍 **Anomaly Detection — Germany, Q1 2026**\n\n**2 anomalies detected:**\n\n**1. Click rate drop — Week 8**\nClick rate fell to 0.94%, which is **2.3σ below the rolling mean** (typical range: 2.1–2.6%). This coincides with a batch of campaigns using a new email template with repositioned CTAs.\n\n**2. Unsubscribe spike — Week 10**\nUnsubscribe rate reached 0.42%, **1.9σ above normal** (typical: 0.15–0.25%). Concentrated in the XC90 segment, suggesting audience fatigue in this car model group.\n\n**Recommended actions:**\n• Review the new template's CTA placement and revert if click rates don't recover\n• Investigate XC90 audience fatigue — consider reducing email frequency or refreshing content for this segment\n• Set up automated alerts for ±2σ deviations going forward",
-      "sql": null,
-      "data": null,
-      "benchmark": null,
-      "intent": "anomaly",
-      "confidence": 0.91,
-      "chart_config": null,
-      "processing_steps": ["Classifying intent...", "Detecting anomalies...", "Analyzing results..."]
-    }
-  },
-  {
-    "id": "demo_05",
-    "query": "What click rate should we expect for Spain eNewsletters next quarter?",
-    "keywords": ["expect", "forecast", "predict", "next quarter"],
-    "intent": "predictive",
-    "response": {
-      "answer": "📈 **Forecast — Spain eNewsletter Click Rate, Q2 2026**\n\nBased on 18 months of historical data using time-series decomposition:\n\n• **Predicted click rate**: **2.51%** (95% CI: 2.12%–2.89%)\n• **Trend**: Gradual upward trajectory (+0.04pp/month)\n• **Seasonality**: Q2 typically sees +5–8% engagement uplift\n\nThis represents a projected **+7.3% improvement** over the current quarter average of 2.34%.\n\n**Model confidence**: High (MAPE: 11.2% on 6-month validation)\n\n**What this means**: Spain eNewsletter performance is on a positive trajectory. To maximize the Q2 seasonal uplift, consider launching the summer campaign content earlier (mid-April vs. May).",
-      "sql": null,
-      "data": null,
-      "benchmark": null,
-      "intent": "predictive",
-      "confidence": 0.89,
-      "chart_config": null,
-      "processing_steps": ["Classifying intent...", "Generating forecast...", "Analyzing results..."]
-    }
-  },
-  {
-    "id": "demo_06",
-    "query": "Show top 5 performing campaigns by click rate",
-    "keywords": ["top", "campaign", "best", "performing"],
+    "id": "golden_03",
+    "query": "How does Germany's email performance compare to the European average?",
+    "keywords": ["germany", "compare", "europe", "average", "emea"],
     "intent": "descriptive",
     "response": {
-      "answer": "**Top 5 Campaigns by Click Rate (All Markets, Last 30 Days):**\n\n| Rank | Campaign | Click Rate | Market |\n|------|----------|-----------|--------|\n| 1 | EX30_Spring_Launch_ES | **3.41%** | Spain |\n| 2 | XC40_Recharge_SE | **3.28%** | Sweden |\n| 3 | EX90_Premium_NO | **3.15%** | Norway |\n| 4 | C40_eNews_Mar_DK | **2.94%** | Denmark |\n| 5 | EX30_Accessories_DE | **2.87%** | Germany |\n\nAll top performers are in the **Good to Excellent** benchmark range. Electric vehicle campaigns (EX30, XC40 Recharge) continue to outperform ICE model campaigns by an average of **+0.6pp**.",
-      "sql": "SELECT\n    campaign_name,\n    country,\n    ROUND(click_rate * 100, 2) AS click_rate_pct,\n    total_sends,\n    total_clicks\nFROM DM.v_email_performance_fact\nWHERE send_date >= DATEADD(DAY, -30, CURRENT_DATE())\nORDER BY click_rate DESC\nLIMIT 5",
+      "answer": "For 2026 YTD (Jan 1–Mar 15), Germany (VCDE) click rate is **3.55%** vs Europe average (EMEA) **2.23%**; open rate is **23.16%** vs **22.44%**.",
+      "sql": "WITH base AS (\n  SELECT f.*, c.REGION_NAME_GROUP\n  FROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\n  JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_COUNTRY c\n    ON c.VC_COUNTRY_CODE = f.BUSINESS_UNIT\n  WHERE f.SEND_DATE BETWEEN '2026-01-01' AND '2026-03-15'\n)\nSELECT\n  segment,\n  ROUND(SUM(unique_clicks)*100.0/NULLIF(SUM(sends)-SUM(bounces),0), 2) AS click_rate_pct,\n  ROUND(SUM(unique_opens)*100.0/NULLIF(SUM(sends)-SUM(bounces),0), 2) AS open_rate_pct,\n  SUM(sends) AS sends\nFROM (\n  SELECT 'Germany (VCDE)' AS segment, * FROM base WHERE business_unit = 'VCDE'\n  UNION ALL\n  SELECT 'Europe avg (EMEA)' AS segment, * FROM base WHERE region_name_group = 'EMEA'\n)\nGROUP BY 1\nORDER BY 1;",
       "data": [
-        {"campaign_name": "EX30_Spring_Launch_ES", "country": "Spain", "click_rate_pct": 3.41, "total_sends": 45230, "total_clicks": 1542},
-        {"campaign_name": "XC40_Recharge_SE", "country": "Sweden", "click_rate_pct": 3.28, "total_sends": 38100, "total_clicks": 1250},
-        {"campaign_name": "EX90_Premium_NO", "country": "Norway", "click_rate_pct": 3.15, "total_sends": 22400, "total_clicks": 706},
-        {"campaign_name": "C40_eNews_Mar_DK", "country": "Denmark", "click_rate_pct": 2.94, "total_sends": 31200, "total_clicks": 917},
-        {"campaign_name": "EX30_Accessories_DE", "country": "Germany", "click_rate_pct": 2.87, "total_sends": 67800, "total_clicks": 1946}
+        {"segment": "Europe avg (EMEA)", "click_rate_pct": 2.23, "open_rate_pct": 22.44, "sends": 8976493},
+        {"segment": "Germany (VCDE)", "click_rate_pct": 3.55, "open_rate_pct": 23.16, "sends": 197416}
       ],
-      "benchmark": "Excellent",
+      "benchmark": null,
       "intent": "descriptive",
-      "confidence": 0.94,
-      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "campaign_name", "y_field": "click_rate_pct", "title": "Top 5 Campaigns by Click Rate"},
+      "confidence": 0.93,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "segment", "y_field": "click_rate_pct", "title": "Germany vs Europe — Click Rate (2026 YTD)"},
       "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
     }
   },
   {
-    "id": "demo_07",
-    "query": "Give me a summary of our best and worst performing markets this quarter",
-    "keywords": ["summary", "best", "worst", "market"],
+    "id": "golden_04",
+    "query": "Which campaign achieved the highest engagement in Q3?",
+    "keywords": ["campaign", "highest", "engagement", "q3"],
     "intent": "descriptive",
     "response": {
-      "answer": "📊 **Q1 2026 Market Performance Summary**\n\n**Top 3 Markets (by avg click rate):**\n• **Sweden**: 2.89% ↑ — Excellent\n• **Norway**: 2.64% ↑ — Good\n• **Spain**: 2.34% → — Average (improving)\n\n**Bottom 3 Markets:**\n• **Italy**: 1.42% ↓ — Poor\n• **France**: 1.58% → — Poor\n• **Belgium**: 1.71% → — Average\n\n**Key Insights:**\n1. Nordic markets consistently outperform Southern European markets by **+1.1pp** on average\n2. Italy has declined **18% quarter-over-quarter** — recommend immediate campaign audit\n3. Spain is the most improved market (+7.3% MoM), suggesting recent template changes are working\n\n**Recommendation:** Replicate Swedish campaign template structure (shorter subject lines, single CTA, mobile-first layout) in underperforming markets as a pilot program.",
-      "sql": "SELECT\n    country,\n    ROUND(AVG(click_rate) * 100, 2) AS avg_click_rate_pct,\n    COUNT(DISTINCT campaign_id) AS campaigns,\n    SUM(total_sends) AS total_sends\nFROM DM.v_email_performance_fact\nWHERE send_quarter = 'Q1' AND YEAR(send_date) = 2026\nGROUP BY country\nORDER BY avg_click_rate_pct DESC",
+      "answer": "Highest-engagement campaign in **Q3 2025** (by click rate, sends ≥ 5,000) was **VCBE_LCAMP_20250717_17676_XC60_EDM9_V3_EN** with **7.71%** click rate (open rate **15.00%**, sends **5,376**).",
+      "sql": "SELECT\n  m.EMAIL_NAME,\n  ROUND(SUM(f.UNIQUE_CLICKS)*100.0/NULLIF(SUM(f.SENDS)-SUM(f.BOUNCES),0), 2) AS click_rate_pct,\n  ROUND(SUM(f.UNIQUE_OPENS)*100.0/NULLIF(SUM(f.SENDS)-SUM(f.BOUNCES),0), 2) AS open_rate_pct,\n  SUM(f.SENDS) AS sends\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nJOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m\n  ON m.COMP_KEY = f.COMP_KEY\nWHERE f.SEND_DATE BETWEEN '2025-07-01' AND '2025-09-30'\n  AND m.PROGRAM_OR_COMPAIGN = 'Campaign'\nGROUP BY 1\nHAVING SUM(f.SENDS) >= 5000\nORDER BY click_rate_pct DESC\nLIMIT 1;",
       "data": [
-        {"country": "Sweden", "avg_click_rate_pct": 2.89, "campaigns": 42, "total_sends": 285000},
-        {"country": "Norway", "avg_click_rate_pct": 2.64, "campaigns": 36, "total_sends": 198000},
-        {"country": "Spain", "avg_click_rate_pct": 2.34, "campaigns": 48, "total_sends": 412000},
-        {"country": "Belgium", "avg_click_rate_pct": 1.71, "campaigns": 15, "total_sends": 67000},
-        {"country": "France", "avg_click_rate_pct": 1.58, "campaigns": 32, "total_sends": 245000},
-        {"country": "Italy", "avg_click_rate_pct": 1.42, "campaigns": 28, "total_sends": 189000}
+        {"email_name": "VCBE_LCAMP_20250717_17676_XC60_EDM9_V3_EN", "click_rate_pct": 7.71, "open_rate_pct": 15.0, "sends": 5376}
       ],
       "benchmark": null,
       "intent": "descriptive",
       "confidence": 0.92,
-      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "country", "y_field": "avg_click_rate_pct", "title": "Market Performance — Q1 2026 Click Rate"},
+      "chart_config": null,
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "golden_05",
+    "query": "Compare open rates for France Spain and Italy for the most recent campaign",
+    "keywords": ["compare", "open rate", "france", "spain", "italy", "most recent"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "Most recent Campaign per market (FR/ES/IT) and its open/click rates:\n\n• VCES (Spain) on 2026-03-12: Open **27.20%**, Click **4.00%**\n• VCFR (France) on 2026-03-14: Open **16.51%**, Click **0.40%**\n• VCIT (Italy) on 2026-03-15: Open **20.89%**, Click **2.11%**",
+      "sql": "WITH latest_by_market AS (\n  SELECT\n    f.BUSINESS_UNIT,\n    MAX(f.SEND_DATE) AS max_date\n  FROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\n  JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m\n    ON m.COMP_KEY = f.COMP_KEY\n  WHERE f.BUSINESS_UNIT IN ('VCFR','VCES','VCIT')\n    AND m.PROGRAM_OR_COMPAIGN = 'Campaign'\n  GROUP BY 1\n), top_campaign AS (\n  SELECT\n    f.BUSINESS_UNIT,\n    f.SEND_DATE,\n    m.EMAIL_NAME,\n    SUM(f.SENDS) AS sends\n  FROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\n  JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m\n    ON m.COMP_KEY = f.COMP_KEY\n  JOIN latest_by_market lbm\n    ON lbm.BUSINESS_UNIT = f.BUSINESS_UNIT\n   AND lbm.max_date = f.SEND_DATE\n  WHERE f.BUSINESS_UNIT IN ('VCFR','VCES','VCIT')\n    AND m.PROGRAM_OR_COMPAIGN = 'Campaign'\n  GROUP BY 1,2,3\n), top1 AS (\n  SELECT *\n  FROM top_campaign\n  QUALIFY ROW_NUMBER() OVER (PARTITION BY BUSINESS_UNIT ORDER BY sends DESC) = 1\n)\nSELECT\n  t.BUSINESS_UNIT,\n  t.SEND_DATE,\n  t.EMAIL_NAME,\n  ROUND(SUM(f.UNIQUE_OPENS)*100.0/NULLIF(SUM(f.SENDS)-SUM(f.BOUNCES),0), 2) AS open_rate_pct,\n  ROUND(SUM(f.UNIQUE_CLICKS)*100.0/NULLIF(SUM(f.SENDS)-SUM(f.BOUNCES),0), 2) AS click_rate_pct,\n  SUM(f.SENDS) AS sends\nFROM top1 t\nJOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\n  ON f.BUSINESS_UNIT = t.BUSINESS_UNIT\n AND f.SEND_DATE = t.SEND_DATE\nJOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m\n  ON m.COMP_KEY = f.COMP_KEY\nWHERE m.EMAIL_NAME = t.EMAIL_NAME\nGROUP BY 1,2,3\nORDER BY 1;",
+      "data": [
+        {"business_unit": "VCES", "send_date": "2026-03-12", "email_name": "VCES_LCAMP_20260312_10551_XC90_EDM3_V3_ES", "open_rate_pct": 27.2, "click_rate_pct": 4.0, "sends": 6399},
+        {"business_unit": "VCFR", "send_date": "2026-03-14", "email_name": "VCFR_LCAMP_20260314_16305_EX30_EDM6_V3_FR", "open_rate_pct": 16.51, "click_rate_pct": 0.4, "sends": 4087},
+        {"business_unit": "VCIT", "send_date": "2026-03-15", "email_name": "VCIT_LCAMP_20260315_11232_XC90_EDM9_V3_IT", "open_rate_pct": 20.89, "click_rate_pct": 2.11, "sends": 6718}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.9,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "business_unit", "y_field": "open_rate_pct", "title": "Open Rate — Most Recent Campaign (FR/ES/IT)"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "golden_06",
+    "query": "What is Spain's opt-out rate compared to the EU average in Q3?",
+    "keywords": ["spain", "opt-out", "unsubscribe", "eu average", "q3"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "In **Q3 2025**, Spain (VCES) opt-out rate was **0.679%** vs EU average (EMEA excluding UK) **0.156%**.",
+      "sql": "WITH base AS (\n  SELECT f.*, c.REGION_NAME_GROUP\n  FROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\n  JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_COUNTRY c\n    ON c.VC_COUNTRY_CODE = f.BUSINESS_UNIT\n  WHERE f.SEND_DATE BETWEEN '2025-07-01' AND '2025-09-30'\n)\nSELECT\n  segment,\n  ROUND(SUM(unsubscribes)*100.0/NULLIF(SUM(sends),0), 3) AS opt_out_rate_pct,\n  SUM(sends) AS sends\nFROM (\n  SELECT 'Spain (VCES)' AS segment, * FROM base WHERE business_unit = 'VCES'\n  UNION ALL\n  SELECT 'EU avg (EMEA excl UK)' AS segment, * FROM base WHERE region_name_group='EMEA' AND business_unit <> 'VCUK'\n)\nGROUP BY 1\nORDER BY 1;",
+      "data": [
+        {"segment": "EU avg (EMEA excl UK)", "opt_out_rate_pct": 0.156, "sends": 39317095},
+        {"segment": "Spain (VCES)", "opt_out_rate_pct": 0.679, "sends": 1965076}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.92,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "segment", "y_field": "opt_out_rate_pct", "title": "Opt-out Rate — Spain vs EU Avg (Q3 2025)"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "golden_07",
+    "query": "Compare open and click rates for EX30 campaigns in NL versus BE",
+    "keywords": ["compare", "open rate", "click rate", "ex30", "nl", "be"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "For EX30 Campaigns (Oct 2025–Mar 15 2026):\n\n• NL (VCNL): Open **26.65%**, Click **1.96%** (Sends **45,291**)\n• BE (VCBE): Open **19.17%**, Click **5.59%** (Sends **44,107**)\n",
+      "sql": "SELECT\n  f.BUSINESS_UNIT,\n  ROUND(SUM(f.UNIQUE_OPENS)*100.0/NULLIF(SUM(f.SENDS)-SUM(f.BOUNCES),0), 2) AS open_rate_pct,\n  ROUND(SUM(f.UNIQUE_CLICKS)*100.0/NULLIF(SUM(f.SENDS)-SUM(f.BOUNCES),0), 2) AS click_rate_pct,\n  SUM(f.SENDS) AS sends\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nJOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m\n  ON m.COMP_KEY = f.COMP_KEY\nWHERE f.SEND_DATE BETWEEN '2025-10-01' AND '2026-03-15'\n  AND m.PROGRAM_OR_COMPAIGN='Campaign'\n  AND m.CAR_MODEL='EX30'\n  AND f.BUSINESS_UNIT IN ('VCNL','VCBE')\nGROUP BY 1\nORDER BY 1;",
+      "data": [
+        {"business_unit": "VCBE", "open_rate_pct": 19.17, "click_rate_pct": 5.59, "sends": 44107},
+        {"business_unit": "VCNL", "open_rate_pct": 26.65, "click_rate_pct": 1.96, "sends": 45291}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.9,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "business_unit", "y_field": "click_rate_pct", "title": "EX30 Campaigns — Click Rate (NL vs BE)"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "golden_08",
+    "query": "Summarize all markets where the opt-out rate exceeds 0.5%",
+    "keywords": ["summarize", "markets", "opt-out", "unsubscribe", ">0.5%"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "In Q3 2025, the following markets exceeded **0.5%** opt-out rate: VCES, VCIT, VCFR, VCUK, VCDE.",
+      "sql": "SELECT\n  BUSINESS_UNIT,\n  ROUND(SUM(UNSUBSCRIBES)*100.0/NULLIF(SUM(SENDS),0), 3) AS opt_out_rate_pct,\n  SUM(SENDS) AS sends\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING\nWHERE SEND_DATE BETWEEN '2025-07-01' AND '2025-09-30'\nGROUP BY 1\nHAVING ROUND(SUM(UNSUBSCRIBES)*100.0/NULLIF(SUM(SENDS),0), 3) > 0.5\nORDER BY opt_out_rate_pct DESC;",
+      "data": [
+        {"business_unit": "VCES", "opt_out_rate_pct": 0.679, "sends": 1965076},
+        {"business_unit": "VCIT", "opt_out_rate_pct": 0.672, "sends": 1620509},
+        {"business_unit": "VCFR", "opt_out_rate_pct": 0.665, "sends": 1433661},
+        {"business_unit": "VCUK", "opt_out_rate_pct": 0.656, "sends": 1687138},
+        {"business_unit": "VCDE", "opt_out_rate_pct": 0.649, "sends": 1030968}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.92,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "business_unit", "y_field": "opt_out_rate_pct", "title": "Markets with Opt-out Rate > 0.5% (Q3 2025)"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "golden_09",
+    "query": "Show me Link Tracking Alias performance for Global eNewsletter in France",
+    "keywords": ["link tracking alias", "global enewsletter", "france"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "For France (VCFR) Global eNewsletter (Central scope), block CTR by LinkTrackingAlias is shown below. Top alias by block clicks is **GlobalENewsletter** (3,953 clicks, 1.00% block CTR).",
+      "sql": "SELECT\n  a.LINKTRACKINGALIAS,\n  ROUND(SUM(b.UNIQUE_BLOCK_CLICKS)*100.0/NULLIF(SUM(f.SENDS)-SUM(f.BOUNCES),0), 2) AS block_ctr_pct,\n  SUM(b.UNIQUE_BLOCK_CLICKS) AS block_clicks,\n  SUM(f.SENDS) AS sends\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_BLOCK b\nJOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_ALIAS a\n  ON a.ALIAS = b.ALIAS\nJOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\n  ON f.COMP_KEY = b.COMP_KEY\nJOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m\n  ON m.COMP_KEY = f.COMP_KEY\nWHERE m.PROGRAM_OR_COMPAIGN = 'E-newsletter'\n  AND m.GEOGRAPHIC_SCOPE = 'Central'\n  AND f.BUSINESS_UNIT = 'VCFR'\nGROUP BY 1\nORDER BY block_clicks DESC\nLIMIT 10;",
+      "data": [
+        {"linktrackingalias": "GlobalENewsletter", "block_ctr_pct": 1.0, "block_clicks": 3953, "sends": 396736},
+        {"linktrackingalias": "Configurator", "block_ctr_pct": 1.02, "block_clicks": 3646, "sends": 361291},
+        {"linktrackingalias": "Electrification", "block_ctr_pct": 1.15, "block_clicks": 3642, "sends": 319763},
+        {"linktrackingalias": "VolvoCarsApp", "block_ctr_pct": 0.92, "block_clicks": 3184, "sends": 347609}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.9,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "linktrackingalias", "y_field": "block_ctr_pct", "title": "Global eNewsletter (France) — Block CTR by LinkTrackingAlias"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "testsql_01",
+    "query": "Click rate for EX30 in Spain (last month)",
+    "keywords": ["click rate", "ex30", "spain", "last month"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "EX30 Spain last-month click rate is **4.3%** on **9,657** delivered emails.",
+      "sql": "SELECT\n  ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,\n  SUM(f.sends) - SUM(f.bounces) AS total_delivered\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nLEFT JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key\nINNER JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_COUNTRY c ON m.business_unit = c.vc_country_code\nWHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)\n  AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -1, CURRENT_DATE))\n  AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)\n  AND (c.country_name ILIKE 'Spain' OR c.vc_country_code ILIKE 'VCES')\n  AND m.email_name ILIKE '%EX30%'\nHAVING SUM(f.sends) - SUM(f.bounces) >= 100;",
+      "data": [{"click_rate_pct": 4.3, "total_delivered": 9657}],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.95,
+      "chart_config": null,
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "testsql_02",
+    "query": "Compare open rates across Nordic markets",
+    "keywords": ["compare", "open rate", "nordic", "sweden", "norway", "denmark", "finland"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "Nordic open rates (all time, filtered to key markets): Finland **26.5%**, Sweden **23.2%**, Denmark **22.5%**, Norway **19.0%**.",
+      "sql": "SELECT\n  c.country_name,\n  ROUND(SUM(f.unique_opens) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS open_rate_pct,\n  SUM(f.sends) - SUM(f.bounces) AS total_delivered\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nLEFT JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key\nINNER JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_COUNTRY c ON m.business_unit = c.vc_country_code\nWHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)\n  AND (\n       c.country_name ILIKE 'Sweden' OR c.vc_country_code = 'VCSE'\n    OR c.country_name ILIKE 'Norway' OR c.vc_country_code = 'VCNO'\n    OR c.country_name ILIKE 'Denmark' OR c.vc_country_code = 'VCDK'\n    OR c.country_name ILIKE 'Finland' OR c.vc_country_code = 'VCFI'\n  )\nGROUP BY c.country_name\nHAVING SUM(f.sends) - SUM(f.bounces) >= 100\nORDER BY open_rate_pct DESC;",
+      "data": [
+        {"country_name": "Finland", "open_rate_pct": 26.5, "total_delivered": 8588983},
+        {"country_name": "Sweden", "open_rate_pct": 23.2, "total_delivered": 8633633},
+        {"country_name": "Denmark", "open_rate_pct": 22.5, "total_delivered": 8610142},
+        {"country_name": "Norway", "open_rate_pct": 19.0, "total_delivered": 5455278}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.93,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "country_name", "y_field": "open_rate_pct", "title": "Open Rate — Nordic Markets"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "testsql_03",
+    "query": "Top 5 campaigns by click rate last month",
+    "keywords": ["top", "campaign", "click rate", "last month"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "Top 5 campaigns last month (by click rate) are listed in the data payload.",
+      "sql": "SELECT\n  m.email_name AS email_name_cleansed,\n  ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,\n  SUM(f.sends) - SUM(f.bounces) AS total_delivered\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nLEFT JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key\nWHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)\n  AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -1, CURRENT_DATE))\n  AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)\nGROUP BY m.email_name\nHAVING SUM(f.sends) - SUM(f.bounces) >= 100\nORDER BY click_rate_pct DESC\nLIMIT 5;",
+      "data": [
+        {"email_name_cleansed": "GLOBAL_EDM_20260226_17514_EDM9_EN", "click_rate_pct": 7.9, "total_delivered": 5193},
+        {"email_name_cleansed": "GLOBAL_EDM_20260215_18090_EDM9_EN", "click_rate_pct": 7.6, "total_delivered": 7183},
+        {"email_name_cleansed": "GLOBAL_EDM_20260219_13332_EDM3_EN", "click_rate_pct": 7.5, "total_delivered": 6046},
+        {"email_name_cleansed": "VCBE_LCAMP_20260202_14079_S60_EDM3_V3_EN", "click_rate_pct": 7.3, "total_delivered": 6119},
+        {"email_name_cleansed": "GLOBAL_EDM_20260208_10356_EDM6_EN", "click_rate_pct": 7.3, "total_delivered": 7336}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.93,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "email_name_cleansed", "y_field": "click_rate_pct", "title": "Top 5 Campaigns by Click Rate (Last Month)"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "testsql_04",
+    "query": "Send volume trend for Germany (last 6 months)",
+    "keywords": ["send volume", "trend", "germany", "last 6 months"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "Germany send volume trend for the last 6 months is shown by month below.",
+      "sql": "SELECT\n  DATE_TRUNC('MONTH', f.send_date) AS send_month,\n  SUM(f.sends) AS total_sends,\n  SUM(f.sends) - SUM(f.bounces) AS total_delivered\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nLEFT JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key\nINNER JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_COUNTRY c ON m.business_unit = c.vc_country_code\nWHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)\n  AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -6, CURRENT_DATE))\n  AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)\n  AND (c.country_name ILIKE 'Germany' OR c.vc_country_code ILIKE 'VCDE')\nGROUP BY DATE_TRUNC('MONTH', f.send_date)\nHAVING SUM(f.sends) - SUM(f.bounces) >= 100\nORDER BY send_month ASC;",
+      "data": [
+        {"send_month": "2025-09-01", "total_sends": 282675, "total_delivered": 280145},
+        {"send_month": "2025-10-01", "total_sends": 60157, "total_delivered": 59599},
+        {"send_month": "2025-11-01", "total_sends": 64409, "total_delivered": 63842},
+        {"send_month": "2025-12-01", "total_sends": 65891, "total_delivered": 65284},
+        {"send_month": "2026-01-01", "total_sends": 75190, "total_delivered": 74433},
+        {"send_month": "2026-02-01", "total_sends": 82050, "total_delivered": 81339}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.92,
+      "chart_config": {"show_chart": true, "chart_type": "line", "x_field": "send_month", "y_field": "total_sends", "title": "Germany Send Volume — Last 6 Months"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "testsql_05",
+    "query": "Which markets have the lowest open rates?",
+    "keywords": ["markets", "lowest", "open rate"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "Lowest open-rate markets (top 20) are listed in the data payload.",
+      "sql": "SELECT\n  m.business_unit,\n  ROUND(SUM(f.unique_opens) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS open_rate_pct,\n  SUM(f.sends) - SUM(f.bounces) AS total_delivered\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nLEFT JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key\nWHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)\nGROUP BY m.business_unit\nHAVING SUM(f.sends) - SUM(f.bounces) >= 100\nORDER BY open_rate_pct ASC\nLIMIT 20;",
+      "data": [
+        {"business_unit": "VCJP", "open_rate_pct": 19.0, "total_delivered": 4948094},
+        {"business_unit": "VCNO", "open_rate_pct": 19.0, "total_delivered": 5455278},
+        {"business_unit": "VCUS", "open_rate_pct": 19.3, "total_delivered": 5398777},
+        {"business_unit": "VCIT", "open_rate_pct": 19.4, "total_delivered": 6824950},
+        {"business_unit": "VCZA", "open_rate_pct": 19.8, "total_delivered": 5552504},
+        {"business_unit": "VCBE", "open_rate_pct": 19.9, "total_delivered": 5343393},
+        {"business_unit": "VCCA", "open_rate_pct": 20.6, "total_delivered": 5074704},
+        {"business_unit": "VCGR", "open_rate_pct": 21.0, "total_delivered": 4796802},
+        {"business_unit": "VCTW", "open_rate_pct": 21.0, "total_delivered": 7668230},
+        {"business_unit": "VCGF", "open_rate_pct": 21.4, "total_delivered": 6760366},
+        {"business_unit": "VCIE", "open_rate_pct": 21.4, "total_delivered": 7137820},
+        {"business_unit": "VCFR", "open_rate_pct": 21.4, "total_delivered": 5421254},
+        {"business_unit": "VCTR", "open_rate_pct": 21.4, "total_delivered": 7271877},
+        {"business_unit": "VCBR", "open_rate_pct": 21.6, "total_delivered": 7952974},
+        {"business_unit": "VCAU", "open_rate_pct": 21.8, "total_delivered": 4113307},
+        {"business_unit": "VCUAT", "open_rate_pct": 22.1, "total_delivered": 7321227},
+        {"business_unit": "VCPT", "open_rate_pct": 22.3, "total_delivered": 4077805},
+        {"business_unit": "VCUK", "open_rate_pct": 22.3, "total_delivered": 6753723},
+        {"business_unit": "VCDK", "open_rate_pct": 22.5, "total_delivered": 8610142},
+        {"business_unit": "VCTH", "open_rate_pct": 22.7, "total_delivered": 5118634}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.9,
+      "chart_config": {"show_chart": true, "chart_type": "bar", "x_field": "business_unit", "y_field": "open_rate_pct", "title": "Lowest Open Rate Markets"},
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "testsql_06",
+    "query": "Unsubscribe rate for EX90 campaigns last month",
+    "keywords": ["unsubscribe rate", "ex90", "last month"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "EX90 last-month unsubscribe rate was **0.06%** on **322,620** delivered emails.",
+      "sql": "SELECT\n  ROUND(SUM(f.unsubscribes) * 100.0 / NULLIF(SUM(f.sends), 0), 2) AS unsubscribe_rate_pct,\n  SUM(f.sends) - SUM(f.bounces) AS total_delivered\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nLEFT JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key\nWHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)\n  AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -1, CURRENT_DATE))\n  AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)\n  AND m.email_name ILIKE '%EX90%'\nHAVING SUM(f.sends) - SUM(f.bounces) >= 100;",
+      "data": [{"unsubscribe_rate_pct": 0.06, "total_delivered": 322620}],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.9,
+      "chart_config": null,
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "testsql_07",
+    "query": "Performance breakdown by car model last month (sample)",
+    "keywords": ["performance", "breakdown", "car model", "last month"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "There were **952** campaigns with delivered >= 100 last month; the data payload includes the first 20 rows (alphabetical by email_name).",
+      "sql": "SELECT\n  m.email_name AS email_name_cleansed,\n  ROUND(SUM(f.unique_opens) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS open_rate_pct,\n  ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.sends) - SUM(f.bounces), 0), 1) AS click_rate_pct,\n  ROUND(SUM(f.unique_clicks) * 100.0 / NULLIF(SUM(f.unique_opens), 0), 1) AS ctor_pct,\n  ROUND(SUM(f.bounces) * 100.0 / NULLIF(SUM(f.sends), 0), 1) AS bounce_rate_pct,\n  ROUND(SUM(f.unsubscribes) * 100.0 / NULLIF(SUM(f.sends), 0), 2) AS unsubscribe_rate_pct,\n  ROUND((SUM(f.sends) - SUM(f.bounces)) * 100.0 / NULLIF(SUM(f.sends), 0), 1) AS delivery_rate_pct,\n  SUM(f.sends) AS total_sends,\n  SUM(f.sends) - SUM(f.bounces) AS total_delivered\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nLEFT JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key\nWHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)\n  AND f.send_date >= DATE_TRUNC('MONTH', DATEADD('MONTH', -1, CURRENT_DATE))\n  AND f.send_date < DATE_TRUNC('MONTH', CURRENT_DATE)\nGROUP BY m.email_name\nHAVING SUM(f.sends) - SUM(f.bounces) >= 100\nORDER BY m.email_name ASC\nLIMIT 20;",
+      "data": [
+        {"email_name_cleansed": "GLOBAL_EDM_20260201_13008_EDM3_EN", "open_rate_pct": 20.2, "click_rate_pct": 3.6, "ctor_pct": 17.8, "bounce_rate_pct": 1.2, "unsubscribe_rate_pct": 0.04, "delivery_rate_pct": 98.8, "total_sends": 5260, "total_delivered": 5198},
+        {"email_name_cleansed": "GLOBAL_EDM_20260201_14658_EDM6_EN", "open_rate_pct": 17.6, "click_rate_pct": 1.6, "ctor_pct": 9.1, "bounce_rate_pct": 1.3, "unsubscribe_rate_pct": 0.06, "delivery_rate_pct": 98.7, "total_sends": 9804, "total_delivered": 9678},
+        {"email_name_cleansed": "GLOBAL_EDM_20260201_16842_EDM3_EN", "open_rate_pct": 27.4, "click_rate_pct": 3.8, "ctor_pct": 13.9, "bounce_rate_pct": 0.6, "unsubscribe_rate_pct": 0.09, "delivery_rate_pct": 99.4, "total_sends": 3431, "total_delivered": 3410},
+        {"email_name_cleansed": "GLOBAL_EDM_20260201_17766_EDM9_EN", "open_rate_pct": 23.4, "click_rate_pct": 3.7, "ctor_pct": 15.8, "bounce_rate_pct": 1.3, "unsubscribe_rate_pct": 0.04, "delivery_rate_pct": 98.7, "total_sends": 2745, "total_delivered": 2708},
+        {"email_name_cleansed": "GLOBAL_EDM_20260201_18408_EDM3_ES", "open_rate_pct": 30.1, "click_rate_pct": 4.3, "ctor_pct": 14.3, "bounce_rate_pct": 1.1, "unsubscribe_rate_pct": 0.06, "delivery_rate_pct": 98.9, "total_sends": 7153, "total_delivered": 7072},
+        {"email_name_cleansed": "GLOBAL_EDM_20260202_10830_EDM3_EN", "open_rate_pct": 25.9, "click_rate_pct": 3.4, "ctor_pct": 13.1, "bounce_rate_pct": 0.6, "unsubscribe_rate_pct": 0.06, "delivery_rate_pct": 99.4, "total_sends": 9713, "total_delivered": 9652},
+        {"email_name_cleansed": "GLOBAL_EDM_20260202_10956_EDM3_EN", "open_rate_pct": 22.6, "click_rate_pct": 5.3, "ctor_pct": 23.5, "bounce_rate_pct": 0.5, "unsubscribe_rate_pct": 0.02, "delivery_rate_pct": 99.5, "total_sends": 8129, "total_delivered": 8088},
+        {"email_name_cleansed": "GLOBAL_EDM_20260202_13068_EDM9_EN", "open_rate_pct": 16.5, "click_rate_pct": 1.7, "ctor_pct": 10.3, "bounce_rate_pct": 0.6, "unsubscribe_rate_pct": 0.06, "delivery_rate_pct": 99.4, "total_sends": 7890, "total_delivered": 7841},
+        {"email_name_cleansed": "GLOBAL_EDM_20260202_13290_EDM6_EN", "open_rate_pct": 25.2, "click_rate_pct": 3.5, "ctor_pct": 13.9, "bounce_rate_pct": 0.6, "unsubscribe_rate_pct": 0.03, "delivery_rate_pct": 99.4, "total_sends": 9868, "total_delivered": 9804},
+        {"email_name_cleansed": "GLOBAL_EDM_20260202_15444_EDM9_EN", "open_rate_pct": 23.5, "click_rate_pct": 3.2, "ctor_pct": 13.6, "bounce_rate_pct": 1.0, "unsubscribe_rate_pct": 0.07, "delivery_rate_pct": 99.0, "total_sends": 3074, "total_delivered": 3043},
+        {"email_name_cleansed": "GLOBAL_EDM_20260202_16314_EDM6_EN", "open_rate_pct": 15.4, "click_rate_pct": 0.9, "ctor_pct": 5.9, "bounce_rate_pct": 0.6, "unsubscribe_rate_pct": 0.03, "delivery_rate_pct": 99.4, "total_sends": 7585, "total_delivered": 7539},
+        {"email_name_cleansed": "GLOBAL_EDM_20260203_10134_EDM9_IT", "open_rate_pct": 18.2, "click_rate_pct": 4.9, "ctor_pct": 26.9, "bounce_rate_pct": 1.1, "unsubscribe_rate_pct": 0.06, "delivery_rate_pct": 98.9, "total_sends": 6517, "total_delivered": 6447},
+        {"email_name_cleansed": "GLOBAL_EDM_20260203_13104_EDM9_EN", "open_rate_pct": 22.3, "click_rate_pct": 0.5, "ctor_pct": 2.3, "bounce_rate_pct": 0.7, "unsubscribe_rate_pct": 0.04, "delivery_rate_pct": 99.3, "total_sends": 9413, "total_delivered": 9351},
+        {"email_name_cleansed": "GLOBAL_EDM_20260203_15090_EDM6_EN", "open_rate_pct": 25.1, "click_rate_pct": 0.4, "ctor_pct": 1.6, "bounce_rate_pct": 1.3, "unsubscribe_rate_pct": 0.11, "delivery_rate_pct": 98.7, "total_sends": 11578, "total_delivered": 11425},
+        {"email_name_cleansed": "GLOBAL_EDM_20260203_15438_EDM3_EN", "open_rate_pct": 22.9, "click_rate_pct": 6.4, "ctor_pct": 27.9, "bounce_rate_pct": 1.1, "unsubscribe_rate_pct": 0.08, "delivery_rate_pct": 98.9, "total_sends": 6559, "total_delivered": 6486},
+        {"email_name_cleansed": "GLOBAL_EDM_20260203_18366_EDM6_EN", "open_rate_pct": 17.0, "click_rate_pct": 0.4, "ctor_pct": 2.4, "bounce_rate_pct": 1.3, "unsubscribe_rate_pct": 0.08, "delivery_rate_pct": 98.7, "total_sends": 8807, "total_delivered": 8693},
+        {"email_name_cleansed": "GLOBAL_EDM_20260204_11268_EDM9_EN", "open_rate_pct": 19.2, "click_rate_pct": 0.4, "ctor_pct": 2.1, "bounce_rate_pct": 0.7, "unsubscribe_rate_pct": 0.07, "delivery_rate_pct": 99.3, "total_sends": 7206, "total_delivered": 7159},
+        {"email_name_cleansed": "GLOBAL_EDM_20260204_12198_EDM3_EN", "open_rate_pct": 24.8, "click_rate_pct": 2.7, "ctor_pct": 10.9, "bounce_rate_pct": 0.6, "unsubscribe_rate_pct": 0.05, "delivery_rate_pct": 99.4, "total_sends": 6069, "total_delivered": 6035},
+        {"email_name_cleansed": "GLOBAL_EDM_20260204_13188_EDM3_EN", "open_rate_pct": 27.6, "click_rate_pct": 1.2, "ctor_pct": 4.3, "bounce_rate_pct": 0.6, "unsubscribe_rate_pct": 0.09, "delivery_rate_pct": 99.4, "total_sends": 7837, "total_delivered": 7789},
+        {"email_name_cleansed": "GLOBAL_EDM_20260204_15912_EDM9_EN", "open_rate_pct": 24.1, "click_rate_pct": 5.5, "ctor_pct": 22.9, "bounce_rate_pct": 0.8, "unsubscribe_rate_pct": 0.11, "delivery_rate_pct": 99.2, "total_sends": 4686, "total_delivered": 4649}
+      ],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.9,
+      "chart_config": null,
+      "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
+    }
+  },
+  {
+    "id": "testsql_08",
+    "query": "How many emails were sent to Spain in Q1 2025?",
+    "keywords": ["spain", "sends", "q1 2025"],
+    "intent": "descriptive",
+    "response": {
+      "answer": "Total sends to Spain (VCES) in Q1 2025 were **2,678,585**.",
+      "sql": "SELECT\n  SUM(f.sends) AS total_sends\nFROM PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f\nLEFT JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key\nINNER JOIN PLAYGROUND_LM.CORTEX_ANALYTICS_ORCHESTRATOR.AGENT_V_DIM_COUNTRY c ON m.business_unit = c.vc_country_code\nWHERE (m.email_name NOT ILIKE '%sparkpost%' OR m.email_name IS NULL)\n  AND (c.country_name ILIKE 'Spain' OR c.vc_country_code ILIKE 'VCES')\n  AND f.send_date >= '2025-01-01' AND f.send_date < '2025-04-01'\nHAVING SUM(f.sends) - SUM(f.bounces) >= 100;",
+      "data": [{"total_sends": 2678585}],
+      "benchmark": null,
+      "intent": "descriptive",
+      "confidence": 0.9,
+      "chart_config": null,
       "processing_steps": ["Classifying intent...", "Generating SQL...", "Executing query...", "Analyzing results..."]
     }
   }

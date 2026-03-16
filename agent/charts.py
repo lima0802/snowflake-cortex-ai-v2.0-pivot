@@ -29,7 +29,7 @@ BENCHMARK_COLORS = {
 
 DATE_PATTERNS   = re.compile(r"date|month|week|year|period|time", re.I)
 METRIC_PATTERNS = re.compile(r"rate|pct|percent|count|sends|clicks|opens|bounces|delivered|volume|total", re.I)
-CATEGORY_PATTERNS = re.compile(r"market|business_unit|bu|region|country|program|type|category|intent|email_name", re.I)
+CATEGORY_PATTERNS = re.compile(r"market|name|business_unit|bu|region|country|program|type|category|intent|email_name", re.I)
 BENCHMARK_PATTERNS = re.compile(r"benchmark|classification|rating|status|tier", re.I)
 
 # Query keyword signals
@@ -79,10 +79,12 @@ def _format_label(col: str) -> str:
 
 # ── Core detection logic ──────────────────────────────────────────────────────
 
-def recommend_chart(results: list, query: str = "") -> dict | None:
+def recommend_chart(results: list, query: str = "", force: bool = False) -> dict | None:
     """
     Analyse result set + query text and return a Plotly-ready chart config,
     or None if the data isn't suitable for a chart.
+
+    force=True skips the minimum-rows guard (used when user explicitly asks to plot).
 
     Returned dict keys:
         chart_type   : "bar" | "horizontal_bar" | "line" | "multi_line" | "donut"
@@ -94,7 +96,9 @@ def recommend_chart(results: list, query: str = "") -> dict | None:
         is_pct       : bool — True if primary metric is a percentage
         colors       : list of hex colors
     """
-    if not results or len(results) < 2:
+    if not results:
+        return None
+    if not force and len(results) < 2:
         return None
 
     cols = _classify_columns(results)
@@ -279,10 +283,14 @@ def build_plotly_figure(results: list, config: dict) -> dict | None:
 
         elif chart_type == "line":
             y_vals = [_safe_num(row.get(y_fields[0])) for row in data]
+            text  = [f"{v:.1f}%" if is_pct else _fmt_num(v) for v in y_vals]
             fig.add_trace(go.Scatter(
                 name=_format_label(y_fields[0]),
                 x=x_vals, y=y_vals,
-                mode="lines+markers",
+                mode="lines+markers+text",
+                text=text,
+                textposition="top center",
+                textfont=dict(size=10, color=colors[0]),
                 line=dict(color=colors[0], width=2.5),
                 marker=dict(size=7, color=colors[1]),
             ))
@@ -290,10 +298,14 @@ def build_plotly_figure(results: list, config: dict) -> dict | None:
         elif chart_type == "multi_line":
             for i, yf in enumerate(y_fields):
                 y_vals = [_safe_num(row.get(yf)) for row in data]
+                text  = [f"{v:.1f}%" if is_pct else _fmt_num(v) for v in y_vals]
                 fig.add_trace(go.Scatter(
                     name=_format_label(yf),
                     x=x_vals, y=y_vals,
-                    mode="lines+markers",
+                    mode="lines+markers+text",
+                    text=text,
+                    textposition="top center",
+                    textfont=dict(size=10, color=colors[i % len(colors)]),
                     line=dict(color=colors[i % len(colors)], width=2.5),
                     marker=dict(size=7),
                 ))

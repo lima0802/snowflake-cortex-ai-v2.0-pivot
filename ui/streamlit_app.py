@@ -2,15 +2,31 @@
 DIA v2 - Streamlit UI
 =======================
 Direct Marketing Analytics Agent — Volvo Cars visual identity.
+
+Deployment modes (set via env var):
+  DIA_MODE=direct  → agent runs in-process (Streamlit Cloud, single-container)
+  DIA_MODE=api     → calls FastAPI backend at DIA_API_URL (Docker VM, multi-service)
+Default: direct (no separate server needed).
 """
 
 import streamlit as st
-import requests
 import plotly.graph_objects as go
 import os
 import uuid
+import asyncio
+import sys
 
-API_URL = os.getenv("DIA_API_URL", "http://localhost:8001")
+# ── Deployment mode ───────────────────────────────────────────────────────────
+# direct = run agent in-process (Streamlit Cloud)
+# api    = call FastAPI backend (Docker / VM)
+_MODE    = os.getenv("DIA_MODE", "direct").lower()
+_API_URL = os.getenv("DIA_API_URL", "http://localhost:8000")
+
+# In direct mode, add project root to path so agent/* imports resolve
+if _MODE == "direct":
+    _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _ROOT not in sys.path:
+        sys.path.insert(0, _ROOT)
 
 # ── SVG avatars — line art, no fill ──────────────────────────────────────────
 
@@ -290,13 +306,21 @@ button[kind="header"][data-testid*="sidebar"] {
     padding: 14px 16px;
     margin: 6px 0;
 }
-.msg-bot-wrap p, .msg-bot-wrap li, .msg-bot-wrap * {
+.msg-bot-wrap,
+.msg-bot-wrap p,
+.msg-bot-wrap li,
+.msg-bot-wrap span,
+.msg-bot-wrap div,
+.msg-bot-wrap * {
     font-family: 'Inter', sans-serif !important;
     color: #FFFFFF !important;
     font-size: 14px !important;
     line-height: 1.7 !important;
 }
-.msg-bot-wrap strong, .msg-bot-wrap b {
+.msg-bot-wrap strong,
+.msg-bot-wrap b,
+.msg-bot-wrap em,
+.msg-bot-wrap a {
     color: #FFFFFF !important;
     font-weight: 600 !important;
 }
@@ -370,9 +394,9 @@ with st.sidebar:
         "What was the open rate for last month's global eDM campaign?",
         "Show me the click-through rate trend for the past six months in Europe",
         "How does Germany's email performance compare to the European average?",
-        "Which campaign achieved the highest engagement in Q3?",
+        "Which campaign achieved the highest engagement in Q3 2025?",
         "Compare open rates for France Spain and Italy for the most recent campaign",
-        "What is Spain's opt-out rate compared to the EU average in Q3?",
+        "What is Spain's opt-out rate compared to the EU average in Q3 2025?",
         "Compare open and click rates for EX30 campaigns in NL versus BE",
         "Summarize all markets where the opt-out rate exceeds 0.5%",
         "Show me Link Tracking Alias performance for Global eNewsletter in France",
@@ -473,22 +497,38 @@ def _to_html(text: str) -> str:
 
 
 def _send_feedback(rating: int, msg: dict, session_id: str, comment: str = ""):
-    try:
-        requests.post(
-            f"{API_URL}/feedback",
-            json={
-                "rating":        rating,
-                "query_text":    msg.get("query", ""),
-                "answer_text":   msg.get("content", ""),
-                "sql_generated": msg.get("sql"),
-                "intent":        msg.get("intent"),
-                "feedback_text": comment or None,
-                "session_id":    session_id,
-            },
-            timeout=10,
-        )
-    except Exception:
-        pass
+    if _MODE == "direct":
+        try:
+            from agent.feedback import write_feedback
+            write_feedback(
+                rating=rating,
+                query_text=msg.get("query", ""),
+                answer_text=msg.get("content", ""),
+                sql_generated=msg.get("sql"),
+                intent=msg.get("intent"),
+                feedback_text=comment or None,
+                session_id=session_id,
+            )
+        except Exception:
+            pass
+    else:
+        try:
+            import requests
+            requests.post(
+                f"{_API_URL}/feedback",
+                json={
+                    "rating":        rating,
+                    "query_text":    msg.get("query", ""),
+                    "answer_text":   msg.get("content", ""),
+                    "sql_generated": msg.get("sql"),
+                    "intent":        msg.get("intent"),
+                    "feedback_text": comment or None,
+                    "session_id":    session_id,
+                },
+                timeout=10,
+            )
+        except Exception:
+            pass
 
 
 def _render_bot_message(msg: dict, idx: int):
@@ -609,21 +649,72 @@ if prompt:
 
     with st.spinner("Analysing…"):
         try:
-            response = requests.post(
-                f"{API_URL}/query",
-                json={"query": prompt, "session_id": st.session_state.session_id},
-                timeout=90,
-            )
-            result = response.json()
+            # Build conversation history (last 6 turns) for context
+            history = [
+                {"role": m["role"], "content": m["content"]}
+                for m in st.session_state.messages[-6:]
+                if m["role"] in ("user", "assistant")
+            ]
 
-            if response.status_code == 200:
+            # Pass last assistant data for "plot that data" support
+            last_data = None
+            last_sql  = None
+            for m in reversed(st.session_state.messages):
+                if m["role"] == "assistant" and m.get("data"):
+                    last_data = m["data"]
+                    last_sql  = m.get("sql")
+                    break
+            context = {
+                "history":       history,
+                "previous_data": last_data,
+                "previous_sql":  last_sql,
+            }
+
+            # ── Call agent: direct (in-process) or via API ────────────────
+            if _MODE == "direct":
+                from agent.graph import run_agent
+                result = asyncio.run(run_agent(
+                    query=prompt,
+                    session_id=st.session_state.session_id,
+                    context=context,
+                ))
+                ok = True
+            else:
+                import requests
+                response = requests.post(
+                    f"{_API_URL}/query",
+                    json={"query": prompt, "session_id": st.session_state.session_id, "context": context},
+                    timeout=90,
+                )
+                result = response.json()
+                ok = response.status_code == 200
+
+            # Only auto-show chart for trend/time-series or explicit plot requests
+            import re as _re
+            _PLOT_REQUEST = _re.compile(r"\b(plot|chart|graph|visuali[sz]e|show.{0,10}(chart|graph|plot))\b", _re.I)
+            _TREND_INTENT = result.get("intent") in ("predictive",)
+            _data = result.get("data") or []
+            _col_keys = list(_data[0].keys()) if _data else []
+            _has_date_col = any(
+                _re.search(r"\b(month|send_date|send_month|week|period)\b", k, _re.I)
+                for k in _col_keys
+            )
+            # Trend = date column present AND multiple rows (not a single-value lookup)
+            _is_trend = _has_date_col and len(_data) > 1
+            show_chart = (
+                _PLOT_REQUEST.search(prompt)
+                or _TREND_INTENT
+                or _is_trend
+            )
+
+            if ok:
                 new_msg = {
                     "role":         "assistant",
                     "content":      result["answer"],
                     "sql":          result.get("sql"),
                     "data":         result.get("data"),
-                    "chart_config": result.get("chart_config"),
-                    "chart_figure": result.get("chart_figure"),
+                    "chart_config": result.get("chart_config") if show_chart else None,
+                    "chart_figure": result.get("chart_figure") if show_chart else None,
                     "benchmark":    result.get("benchmark"),
                     "intent":       result.get("intent"),
                     "query":        prompt,
@@ -634,9 +725,6 @@ if prompt:
             else:
                 st.error(f"Error: {result.get('detail', 'Unknown error')}")
 
-        except requests.exceptions.ConnectionError:
-            st.error("Cannot connect to the DIA backend. Make sure the API server is running.")
-            st.code("uvicorn main:app --reload", language="bash")
         except Exception as e:
             st.error(f"Error: {str(e)}")
 

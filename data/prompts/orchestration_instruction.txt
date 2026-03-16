@@ -89,3 +89,6 @@ EXAMPLES:
 {"query": "Show me the click-through rate trend for the past six months in Europe"} → {"intent": "descriptive","confidence": 0.97}
 {"query": "Summarize all markets where the opt-out rate exceeds 0.5%"}            → {"intent": "descriptive",  "confidence": 0.95}
 {"query": "Compare open rates for France Spain and Italy for the most recent campaign"} → {"intent": "descriptive", "confidence": 0.95}
+{"query": "Which campaign achieved the highest engagement in Q3 2025?"}               → {"intent": "descriptive",  "confidence": 0.95}
+{"query": "What was the open rate in Q1 2025?"}                                       → {"intent": "descriptive",  "confidence": 0.97}
+{"query": "Top campaigns by click rate in Q2 2024"}                                   → {"intent": "descriptive",  "confidence": 0.97}

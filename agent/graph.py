@@ -8,6 +8,7 @@ This is the core intelligence layer — it replaces Cortex Agent.
 """
 
 import logging
+import re
 from typing import TypedDict, Optional, Annotated
 from langgraph.graph import StateGraph, END
 
@@ -53,14 +54,30 @@ class AgentState(TypedDict):
 
 # --- Agent Nodes ---
 
+def _build_contextual_query(query: str, context: dict) -> str:
+    """Prepend recent conversation history to the query so the LLM has context."""
+    history = (context or {}).get("history", [])
+    if not history:
+        return query
+    # Take last 4 turns (excluding the current user message which is already in query)
+    turns = history[-4:]
+    lines = []
+    for turn in turns:
+        role = "User" if turn["role"] == "user" else "Assistant"
+        lines.append(f"{role}: {turn['content'][:200]}")
+    history_str = "\n".join(lines)
+    return f"[Conversation so far]\n{history_str}\n\n[Current question]\n{query}"
+
+
 async def classify_intent_node(state: AgentState) -> AgentState:
     """Classify user intent and kick off RAG index warm-up in parallel."""
     import asyncio
     from agent.rag import _ensure_index
 
     state["processing_steps"].append("Classifying intent...")
-    # Run intent classification and RAG index warm-up concurrently
-    intent_task = asyncio.create_task(classify_intent(state["query"]))
+    # Use contextual query for intent classification
+    contextual_query = _build_contextual_query(state["query"], state.get("context"))
+    intent_task = asyncio.create_task(classify_intent(contextual_query))
     warmup_task = asyncio.create_task(_ensure_index())
     result, _ = await asyncio.gather(intent_task, warmup_task)
     state["intent"] = result["intent"]
@@ -81,8 +98,9 @@ async def entity_search_node(state: AgentState) -> AgentState:
 async def sql_generation_node(state: AgentState) -> AgentState:
     """Generate SQL from natural language and execute against Snowflake."""
     state["processing_steps"].append("Generating SQL...")
+    contextual_query = _build_contextual_query(state["query"], state.get("context"))
     result = await generate_and_execute_sql(
-        query=state["query"],
+        query=contextual_query,
         rag_context=state.get("rag_results"),
         previous_error=state.get("sql_error"),
     )
@@ -206,8 +224,44 @@ def build_agent_graph() -> StateGraph:
 _agent = build_agent_graph()
 
 
+_CHART_REQUEST = re.compile(
+    r"\b(plot|chart|graph|visuali[sz]e|show\s+(me\s+)?a?\s*(chart|graph|plot)|draw)\b",
+    re.I,
+)
+
+
+def _is_chart_request(query: str, context: dict) -> bool:
+    """True if the user is asking to chart previously retrieved data."""
+    return bool(
+        _CHART_REQUEST.search(query)
+        and context
+        and context.get("previous_data")
+    )
+
+
 async def run_agent(query: str, session_id: str = "default", context: dict = None) -> dict:
     """Execute the agent graph and return structured response."""
+
+    # Short-circuit: "plot that data" / "show me a chart" with prior results
+    if _is_chart_request(query, context):
+        from agent.charts import recommend_chart, build_plotly_figure
+        prev_data = context["previous_data"]
+        prev_sql  = context.get("previous_sql")
+        chart_config = recommend_chart(prev_data, query, force=True)
+        chart_figure = build_plotly_figure(prev_data, chart_config) if chart_config else None
+        return {
+            "answer":       "Here's the chart for the previous results." if chart_config
+                            else "I couldn't generate a chart for that data — it may not be suitable for visualisation.",
+            "sql":          prev_sql,
+            "data":         prev_data,
+            "chart_config": chart_config,
+            "chart_figure": chart_figure,
+            "intent":       "descriptive",
+            "confidence":   1.0,
+            "benchmark":    None,
+            "processing_steps": ["Generating chart from previous results..."],
+            "error":        None,
+        }
 
     initial_state: AgentState = {
         "query": query,

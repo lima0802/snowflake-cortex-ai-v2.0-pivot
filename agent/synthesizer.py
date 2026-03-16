@@ -170,8 +170,11 @@ async def synthesize_response(state: dict) -> dict:
     response_instructions = _load_response_prompt()
 
     sql_results_str = "No SQL results."
-    if state.get("sql_results"):
-        sql_results_str = json.dumps(state["sql_results"][:20], indent=2, default=str)
+    if state.get("sql_results") is not None:
+        if len(state["sql_results"]) == 0:
+            sql_results_str = "Query executed successfully and returned 0 rows (empty result set). This is a valid result — interpret it as the answer (e.g. no items matched the criteria)."
+        else:
+            sql_results_str = json.dumps(state["sql_results"][:20], indent=2, default=str)
 
     ml_results_str = "No ML analysis performed."
     if state.get("ml_results"):

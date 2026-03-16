@@ -84,9 +84,16 @@ def _needs_date_clarification(query: str) -> bool:
 async def classify_intent(query: str) -> dict:
     """Classify query intent using a fast, cheap model."""
 
+    # Extract just the current question (after [Current question] marker if present)
+    if "[Current question]" in query:
+        current_question = query.split("[Current question]")[-1].strip()
+    else:
+        current_question = query
+
     # Hard rule: quarter/month without year must be clarified first
-    if _needs_date_clarification(query):
-        logger.info(f"Pre-classify: clarification_needed (ambiguous date) for: {query[:60]}")
+    # Only check the current question, not the conversation history
+    if _needs_date_clarification(current_question):
+        logger.info(f"Pre-classify: clarification_needed (ambiguous date) for: {current_question[:60]}")
         return {"intent": "clarification_needed", "confidence": 0.99}
 
     system_prompt = _load_orchestration_prompt()

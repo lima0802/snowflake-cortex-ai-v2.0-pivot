@@ -33,8 +33,16 @@ instructions: |
   JOIN PATTERNS:
   - Always LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB to preserve all fact records
   - Use INNER JOIN AGENT_V_DIM_COUNTRY only when filtering by region/market
-  - Standard: FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
-               LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+  - AGENT_V_DIM_COUNTRY: always join via metadata — ON m.business_unit = c.vc_country_code (NEVER on f.business_unit or b.business_unit)
+  - AGENT_V_DIM_SFMC_ALIAS: always join ON alias column — ON b.alias = a.alias (NEVER on comp_key)
+  - Standard tracking query:
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_TRACKING f
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON f.comp_key = m.comp_key
+  - Standard block query:
+      FROM AGENT_V_FACT_SFMC_PERFORMANCE_BLOCK b
+      LEFT JOIN AGENT_V_DIM_SFMC_ALIAS a ON b.alias = a.alias
+      LEFT JOIN AGENT_V_DIM_SFMC_METADATA_JOB m ON b.comp_key = m.comp_key
+      INNER JOIN AGENT_V_DIM_COUNTRY c ON m.business_unit = c.vc_country_code
 
   REGIONAL HIERARCHY:
   - Use region_name_group ONLY — NEVER use sub_region
@@ -46,10 +54,10 @@ instructions: |
   - "D2C" or "flipped market" → WHERE f.business_unit = 'VCUK'
 
   EMAIL TYPE FILTERING (field: program_or_compaign):
-  - "campaign" / "campaigns" (generic) → WHERE m.program_or_compaign = 'Campaign'
+  - "campaign" / "campaigns" / "eDM" / "EDM" / "global eDM" → WHERE m.program_or_compaign = 'Campaign'
   - "newsletter" / "e-newsletter"      → WHERE m.program_or_compaign = 'E-newsletter'
   - "program" / "lifecycle"            → WHERE m.program_or_compaign = 'Program'
-  - NOTE: "campaign" without a specific name = category filter, NOT email_name search
+  - NOTE: "campaign" / "eDM" without a specific name = category filter, NOT email_name search
 
   PROGRAM-SPECIFIC FILTERS:
   - Lead Nurture / LNP  : program_names ILIKE '%lead-nurture%' OR program_names ILIKE '%LNP%'
