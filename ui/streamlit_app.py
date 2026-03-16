@@ -16,6 +16,16 @@ import uuid
 import asyncio
 import sys
 
+# ── Inject Streamlit secrets into env vars FIRST (before any agent imports) ──
+# Streamlit Cloud stores secrets in st.secrets — copy them to os.environ so
+# config.py and OpenAI/Snowflake clients can read them via os.getenv().
+try:
+    for _k, _v in st.secrets.items():
+        if isinstance(_v, str) and _k not in os.environ:
+            os.environ[_k] = _v
+except Exception:
+    pass
+
 # ── Deployment mode ───────────────────────────────────────────────────────────
 # direct = run agent in-process (Streamlit Cloud)
 # api    = call FastAPI backend (Docker / VM)

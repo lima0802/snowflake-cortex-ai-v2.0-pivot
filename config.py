@@ -16,15 +16,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Streamlit Cloud injects secrets.toml values as env vars automatically.
-# When running locally via `streamlit run`, also load from secrets.toml if present.
-try:
-    import streamlit as st
-    for _k, _v in st.secrets.items():
-        if isinstance(_v, str) and _k not in os.environ:
-            os.environ[_k] = _v
-except Exception:
-    pass
 
 
 class LLMConfig:
