@@ -15,7 +15,13 @@ import re
 from openai import AsyncOpenAI
 from config import LLMConfig, AppConfig
 
-_openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_openai_client: AsyncOpenAI | None = None
+
+def _get_client() -> AsyncOpenAI:
+    global _openai_client
+    if _openai_client is None:
+        _openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _openai_client
 
 logger = logging.getLogger("dia-v2.intent")
 
@@ -98,7 +104,7 @@ async def classify_intent(query: str) -> dict:
 
     system_prompt = _load_orchestration_prompt()
     try:
-        response = await _openai_client.chat.completions.create(
+        response = await _get_client().chat.completions.create(
             model=LLMConfig.get_model("fast"),
             messages=[
                 {"role": "system", "content": system_prompt},

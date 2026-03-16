@@ -24,7 +24,13 @@ from openai import AsyncOpenAI
 import snowflake.connector
 from config import LLMConfig, SnowflakeConfig, AppConfig
 
-_openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_openai_client: AsyncOpenAI | None = None
+
+def _get_client() -> AsyncOpenAI:
+    global _openai_client
+    if _openai_client is None:
+        _openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _openai_client
 
 logger = logging.getLogger("dia-v2.text_to_sql")
 
@@ -214,7 +220,7 @@ async def generate_and_execute_sql(
 
     sql = None
     try:
-        response = await _openai_client.chat.completions.create(
+        response = await _get_client().chat.completions.create(
             model=LLMConfig.get_model("sql"),
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,

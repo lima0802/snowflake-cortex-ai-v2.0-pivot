@@ -15,7 +15,13 @@ from openai import AsyncOpenAI
 from config import LLMConfig, AppConfig
 from agent.charts import recommend_chart, build_plotly_figure
 
-_openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_openai_client: AsyncOpenAI | None = None
+
+def _get_client() -> AsyncOpenAI:
+    global _openai_client
+    if _openai_client is None:
+        _openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _openai_client
 
 logger = logging.getLogger("dia-v2.synthesizer")
 
@@ -194,7 +200,7 @@ async def synthesize_response(state: dict) -> dict:
     )
 
     try:
-        response = await _openai_client.chat.completions.create(
+        response = await _get_client().chat.completions.create(
             model=LLMConfig.get_model("synthesis"),
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
