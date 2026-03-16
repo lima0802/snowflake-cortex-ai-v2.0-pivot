@@ -20,7 +20,14 @@ _openai_client: AsyncOpenAI | None = None
 def _get_client() -> AsyncOpenAI:
     global _openai_client
     if _openai_client is None:
-        _openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            try:
+                import streamlit as st
+                api_key = st.secrets.get("OPENAI_API_KEY")
+            except Exception:
+                pass
+        _openai_client = AsyncOpenAI(api_key=api_key)
     return _openai_client
 
 logger = logging.getLogger("dia-v2.synthesizer")
