@@ -1,12 +1,16 @@
-# DIA v2 — Data Intelligence Agent (Weekend Sprint)
+# DIA v2 — Direct Marketing Analytics Agent
 
 **Provider-agnostic conversational analytics for Volvo Cars Corporation**
 
-## Quick Start (15 minutes)
+> **Deployment Note**
+> The current demo is deployed via **Streamlit Community Cloud** — a temporary setup for quick demo access and stakeholder review.
+> Once the demo is approved, the production deployment will migrate to a **Cloud VM (Docker)** for full control, security, and scalability.
+> This is a quick-win deployment, not the final architecture.
+
+## Quick Start
 
 ```bash
 # 1. Clone and configure
-cd dia-v2
 cp .env.example .env
 # Edit .env with your credentials (Snowflake + LLM API key)
 
@@ -18,33 +22,49 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000 &
 
 # 4. Start the Streamlit UI
-DIA_API_URL=http://localhost:8000 streamlit run ui/streamlit_app.py &
+DIA_API_URL=http://localhost:8000 streamlit run ui/streamlit_app.py
 
 # 5. Open http://localhost:8501 in your browser
 ```
 
-## Expose to Client (choose one)
+## Streamlit Cloud Deployment (Single URL, No Server)
+
+1. Push this repo to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io) → New app
+3. Set **Main file path**: `ui/streamlit_app.py`
+4. Under **Advanced settings → Secrets**, add:
+
+```toml
+OPENAI_API_KEY      = "sk-..."
+SNOWFLAKE_ACCOUNT   = "your-account.region"
+SNOWFLAKE_USER      = "your_user"
+SNOWFLAKE_PASSWORD  = "your_password"
+SNOWFLAKE_WAREHOUSE = "DIA_WH"
+SNOWFLAKE_DATABASE  = "DEV_MARCOM_DB"
+SNOWFLAKE_SCHEMA    = "CORTEX_ANALYTICS_ORCHESTRATOR"
+SNOWFLAKE_ROLE      = "DIA_ANALYST_ROLE"
+DIA_MODE            = "direct"
+```
+
+5. Deploy → get a public URL instantly
+
+## Docker / Cloud VM Deployment
 
 ```bash
-# Option A: Cloudflare Tunnel (stable, free)
-cloudflared tunnel --url http://localhost:8501
-
-# Option B: ngrok (quick)
-ngrok http 8501
-
-# Option C: Docker on cloud VM
 docker-compose up --build -d
+# API: http://your-vm:8002
+# UI:  http://your-vm:8502
 ```
 
 ## Architecture
 
 ```
-User (Streamlit / Teams)
+User (Streamlit)
   ↓
-FastAPI + LangGraph (Orchestration)
+LangGraph Agent (Orchestration)
   ↓ classify intent → route to tools
   ├── Text-to-SQL → Snowflake (via Python connector)
-  ├── RAG Search → FAISS (entity resolution)
+  ├── RAG Search  → FAISS (entity resolution)
   ├── Anomaly Detection → scipy/IQR
   ├── Forecasting → Prophet
   └── Response Synthesis → LLM
@@ -52,27 +72,27 @@ FastAPI + LangGraph (Orchestration)
 Natural language answer + charts + SQL
 ```
 
+## Deployment Modes
+
+| Mode | How | When |
+|------|-----|------|
+| `DIA_MODE=direct` | Agent runs inside Streamlit (no separate server) | Streamlit Cloud |
+| `DIA_MODE=api` | Streamlit calls FastAPI backend | Docker / VM |
+
 ## LLM Provider Swap
 
 Change `LLM_PROVIDER` in `.env` — zero code changes:
 
-| Provider | Best For | Set in .env |
-|----------|----------|-------------|
-| OpenAI | Highest accuracy | `LLM_PROVIDER=openai` + `OPENAI_API_KEY=...` |
-| Google | Good alternative | `LLM_PROVIDER=google` + `GOOGLE_API_KEY=...` |
-| Together AI | Open-source models | `LLM_PROVIDER=together` + `TOGETHER_API_KEY=...` |
-| Groq | Fastest inference | `LLM_PROVIDER=groq` + `GROQ_API_KEY=...` |
-
-## Demo Fallback
-
-If `DEMO_FALLBACK_ENABLED=true` in `.env`, the system falls back to
-pre-cached responses from `data/golden_queries.json` when live queries fail.
-This ensures the Tuesday demo never crashes.
+| Provider | Set in .env |
+|----------|-------------|
+| OpenAI (default) | `LLM_PROVIDER=openai` + `OPENAI_API_KEY=...` |
+| Google | `LLM_PROVIDER=google` + `GOOGLE_API_KEY=...` |
+| Together AI | `LLM_PROVIDER=together` + `TOGETHER_API_KEY=...` |
+| Groq | `LLM_PROVIDER=groq` + `GROQ_API_KEY=...` |
 
 ## File Structure
 
 ```
-dia-v2/
 ├── main.py                    # FastAPI entry point
 ├── config.py                  # All configuration
 ├── agent/
@@ -81,10 +101,20 @@ dia-v2/
 │   ├── text_to_sql.py         # SQL generation + execution
 │   ├── rag.py                 # FAISS entity search
 │   ├── ml_features.py         # Anomaly + forecasting
-│   └── synthesizer.py         # Response generation
-├── ui/streamlit_app.py        # Streamlit frontend
-├── teams/bot.py               # Teams bot
-├── data/golden_queries.json   # Demo fallback cache
-├── docker-compose.yml         # Full stack deployment
-└── deploy/setup.sh            # Cloud VM setup script
+│   ├── synthesizer.py         # Response generation
+│   ├── charts.py              # Deterministic chart engine
+│   └── feedback.py            # Feedback writer (Snowflake)
+├── ui/
+│   ├── streamlit_app.py       # Streamlit frontend
+│   └── requirements.txt       # Streamlit Cloud dependencies
+├── data/
+│   ├── prompts/               # LLM instruction files (hot-reload)
+│   ├── semantic_views/        # YAML semantic model + verified queries
+│   └── golden_queries.json    # Demo fallback cache
+├── deploy/
+│   ├── Dockerfile
+│   ├── setup.sh               # Cloud VM setup script
+│   └── create_feedback_table.sql
+├── docker-compose.yml
+└── requirements.txt
 ```
